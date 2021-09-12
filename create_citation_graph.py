@@ -1,19 +1,17 @@
 import glob
 import gzip
-import itertools
 import json
-import pickle
+
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import datetime
 from concurrent.futures import ProcessPoolExecutor
+from itertools import repeat
 from multiprocessing import Lock
 from typing import List, Dict
 
+from pymongo import MongoClient
 from tqdm import tqdm
 
-class Graph():
-    def __init__(self):
-        self.nodes = {}
 
 @dataclass
 class Publication:
@@ -27,18 +25,10 @@ class Publication:
 
 
 def parse_entry(entry: dict) -> Publication:
-    # TODO check whether article has citations/is cited, and has all the data we need
-    # print(entry.keys())
-
-    # print('-'* 80)
-    # for key in entry.keys():
-    #     print(key)
-    #     print(entry[key])
-    #     print('-'* 80)
-
     doi = entry.get('DOI', None)
     authors = entry.get('author', None)
     paper_cites = entry.get('reference', None)
+    journal = entry.get('short-container-title', None)
 
     title = entry.get('title', None)
     journal = entry.get('journal-title')
@@ -55,24 +45,36 @@ def parse_entry(entry: dict) -> Publication:
     if date_published is not None:
         date_published = datetime.strptime(date_published, '%Y-%m-%dT%H:%M:%SZ')
 
-    current_pub = Publication(doi=doi, authors=authors, title=title,
-                              paper_cites=paper_cites, date_published=date_published, )
+    pub_dict = {'doi':doi, 'authors':authors, 'title':title, 'journal': journal,
+                'paper_cites':paper_cites, 'date_published':date_published, '_id': doi}
 
-    return current_pub
+    return pub_dict
 
 def validate_publication(pub: Publication):
     """Check to see whether all fields are filled out in the publication"""
-    if None in [pub.doi, pub.title, pub.date_published, pub.authors, pub.title,
-                pub.date_published, pub.paper_cites]:
-        return False
-    if len(pub.paper_cites) <= 0:
+    fields = ['doi', 'authors', 'title', 'paper_cites', 'date_published', '_id']
+    for field in fields:
+        if field not in pub:
+            return False
+        if pub[field] is None:
+            return False
+    # Remove papers that don't cite anything
+    if len(pub['paper_cites']) <= 0:
         return False
 
     return True
 
 
-def parse_file(path: str):
+def parse_file(path: str, files_read: set):
+    if path in files_read:
+        return
     pubs = []
+
+    client = MongoClient()
+    database = client.disrupt_vs_develop
+    citation_table = database.citations
+    files_table = database.files_read
+
     with gzip.open(path) as in_file:
         file_json = json.load(in_file)
         for entry in file_json['items']:
@@ -83,42 +85,36 @@ def parse_file(path: str):
             if not entry_contents_valid:
                 continue
 
-            pubs.append(current_pub)
-    return pubs
+            if current_pub is not None:
+                results = citation_table.replace_one(filter={'_id': current_pub['doi']},
+                                                     replacement=current_pub, upsert=True)
 
+    file_record = {'_id': path, 'path': path}
+    result = files_table.insert_one(file_record)
 
-def build_graph(publications: List[Publication]) -> Graph:
-    pub_graph = Graph()
+def calculate_backlinks(doi_entry: dict) -> None:
+    doi = doi_entry['_id']
+    client = MongoClient()
+    database = client.disrupt_vs_develop
+    citation_table = database.citations
 
-    print('Creating graph')
-    # Create a map from doi to publication
-    for pub in tqdm(publications):
-        if hasattr(pub, 'doi'):
-            pub_graph.nodes[pub.doi] = pub
+    current_pub = citation_table.find_one({'doi': doi})
 
-    # Track which articles cite the current article
-    print('Building backlinks')
+    if current_pub is None:
+        print("{} wasn't found in the database".format(doi))
+        return
 
-    for pub in tqdm(pub_graph.nodes.values()):
-        pub.paper_cites_doi = set()
-        for citation in pub.paper_cites:
-            if 'DOI' in citation and citation['DOI'] in pub_graph.nodes:
-                cited_doi = citation['DOI']
-                cited_publication = pub_graph.nodes[cited_doi]
-                pub.paper_cites_doi.add(cited_doi)
+    paper_cites = current_pub['paper_cites']
+    for citation in paper_cites:
+        if 'DOI' in citation:
+            citation_table.find_one_and_update(filter={'doi': citation['DOI']},
+                                               update={'$push': {'cited_by': doi}})
 
-                if cited_publication.cited_by is None:
-                    cited_publication.cited_by = set(pub.doi)
-                else:
-                    cited_publication.cited_by.add(pub.doi)
-
-    return pub_graph
-
-
-def calculate_disruption_index(pub_graph: Graph) -> Graph:
+def calculate_disruption_index(pub_graph) -> None:
     print('Calculating disruption indices')
 
-    i = 0
+    # TODO due to rerunning, there may be duplicates in the cited_by field that need to be removed
+
     for current_pub in tqdm(pub_graph.nodes.values()):
         # The number of papers citing both this article and at least one paper this article cites
         current_and_ref = 0
@@ -147,7 +143,6 @@ def calculate_disruption_index(pub_graph: Graph) -> Graph:
         total_citations = current_only + current_and_ref + ref_only
         if total_citations == 0:
             continue
-        i += 1
         disruption_index = (current_only - current_and_ref) / total_citations
 
         current_pub.disruption_index = disruption_index
@@ -155,41 +150,39 @@ def calculate_disruption_index(pub_graph: Graph) -> Graph:
         #print('Cite stats', len(current_pub.paper_cites), len(current_pub.paper_cites_doi))
         #print(current_only, current_and_ref, ref_only, total_citations)
         #print(disruption_index)
-    print('Pubs in calc_disruption_index', i)
 
     return pub_graph
 
 
 if __name__ == '__main__':
 
-    try:
-        with open('publications.pkl', 'rb') as in_file:
-            publications = pickle.load(in_file)
-    except FileNotFoundError:
-        # TODO use argparse to get the directory with the json files
-        files = glob.glob('crossref_public_data_file_2021_01/*.json.gz')
-        executor = ProcessPoolExecutor(max_workers=8)
-        publications = list(tqdm(executor.map(parse_file, files[:1000]), total=len(files)))
+    client = MongoClient()
+    database = client.disrupt_vs_develop
+    citation_table = database.citations
+    files_table = database.files_read
 
-        with open('publications.pkl', 'wb') as out_file:
-            pickle.dump(publications, out_file)
+    files_read = set(files_table.find().distinct('_id'))
 
-    #{executor.submit(parse_file, file): file for file in tqdm(files)}
-    # Should this just be a database?
-
-    print(len(publications))
-    publications = list(itertools.chain.from_iterable(publications))
-    print(len(publications))
+    # TODO modify this logic to check which publications have already been loaded into the db
     files = glob.glob('crossref_public_data_file_2021_01/*.json.gz')
-    print(len(files))
 
+    executor = ProcessPoolExecutor(max_workers=8)
 
+    tqdm(executor.map(parse_file, files[:1000], repeat(files_read)), total=len(files))
 
-    graph = build_graph(publications)
+    # Too many entries to use distinct so we have to get a bit fancier and iterate over a cursor
+    dois = citation_table.find({}, {'_id': 1}, hint=([('_id', 1)]))
 
-    graph = calculate_disruption_index(graph)
+    # TODO is it possible to read a cursor in chunks? The overhead of creating a db connection
+    # probably slows this down substantially, esp. since it will be run ~40 million times
 
-    print(len(graph.nodes))
+    tqdm(executor.map(calculate_backlinks, dois), total=dois.count())
+
+    # graph = build_graph(publications)
+
+    # graph = calculate_disruption_index(graph)
+
+    # print(len(graph.nodes))
 
     # for file in tqdm(files):
     #     parse_file(file)
