@@ -180,8 +180,9 @@ def calculate_disruption_index(doi_entries) -> None:
             for citation_doi in current_paper_cites_doi:
                 citation = citation_table.find_one({'_id': citation_doi})
                 if citation is not None:
-                    current_cited_by = list(set(citation['cited_by']))
-                    ref_only += len(current_cited_by)
+                    if 'cited_by' in citation:
+                        current_cited_by = list(set(citation['cited_by']))
+                        ref_only += len(current_cited_by)
 
         # Papers that cite the current paper shouldn't be counted in ref only
         ref_only -= current_and_ref
@@ -220,14 +221,16 @@ if __name__ == '__main__':
     # # https://stackoverflow.com/questions/9786736/how-to-read-through-collection-in-chunks-by-1000
     # generator = chunk_generator(dois, 10000)
 
-    # print('Processing backlinks')
+    # print('Processing backlinks...')
 
     # tqdm(executor.map(calculate_backlinks, generator), total=dois.count() // chunk_size)
 
     print('Done!')
-    print('Calculating disruption indices')
+    print('Calculating disruption indices...')
 
     generator = chunk_generator(dois, chunk_size)
 
-    tqdm(executor.map(calculate_disruption_index, generator), total=dois.count() // chunk_size)
+    list(tqdm(executor.map(calculate_disruption_index, generator), total=dois.count() // chunk_size))
+
+    print('Done!')
 
