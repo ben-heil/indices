@@ -24,12 +24,11 @@ def chunk_generator(doi_cursor, chunk_size=50):
     try:
         while True:
             doc_list = []
-
+            i += 1
             for _ in range(chunk_size):
-                i += 1
-                if i % 1000 == 0:
-                    print(i)
                 doc_list.append(doi_cursor.next())
+            if i % 100 == 0:
+                print(i)
             yield doc_list
 
     except StopIteration:
@@ -120,11 +119,10 @@ def calculate_backlinks(doi_entries: list) -> None:
     database = client.disrupt_vs_develop
     citation_table = database.citations
     for doi_entry in doi_entries:
-        print(doi)
         doi = doi_entry['_id']
 
 
-        current_pub = citation_table.find_one({'doi': doi})
+        current_pub = citation_table.find_one({'_id': doi})
 
         if current_pub is None:
             print("{} wasn't found in the database".format(doi))
@@ -133,8 +131,11 @@ def calculate_backlinks(doi_entries: list) -> None:
         paper_cites = current_pub['paper_cites']
         for citation in paper_cites:
             if 'DOI' in citation:
-                citation_table.find_one_and_update(filter={'doi': citation['DOI']},
+                citation_table.find_one_and_update(filter={'_id': citation['DOI']},
                                                 update={'$push': {'cited_by': doi}})
+
+    client.close()
+    return
 
 
 def calculate_disruption_index(doi_entries) -> None:
@@ -142,21 +143,21 @@ def calculate_disruption_index(doi_entries) -> None:
     database = client.disrupt_vs_develop
     citation_table = database.citations
 
-    # TODO this runs, but doesn't create a disruption_index field. Step through
-    # it and figure out the bug(s)
-
     for doi_entry in doi_entries:
         doi = doi_entry['_id']
-        current_pub = citation_table.find_one({'doi': doi})
+        current_pub = citation_table.find_one({'_id': doi})
 
         # Remove duplicate entries in the cited_by list
+        if 'cited_by' not in current_pub:
+            continue
         cited_by = list(set(current_pub['cited_by']))
 
+
+        # TODO maybe precalculate this to rerun faster?
         current_paper_cites_doi = set()
         for citation in current_pub['paper_cites']:
             if 'DOI' in citation:
                 current_paper_cites_doi.add(citation['DOI'])
-
 
         # The number of papers citing both this article and at least one paper this article cites
         current_and_ref = 0
@@ -166,9 +167,9 @@ def calculate_disruption_index(doi_entries) -> None:
         ref_only = 0
 
         for future_doi in cited_by:
-            future_pub = citation_table.find_one({'doi': future_doi})
+            future_pub = citation_table.find_one({'_id': future_doi})
 
-            future_cites = set(list(future_pub['paper_cites']))
+            future_cites = future_pub['paper_cites']
             for citation in future_cites:
                 if 'DOI' in citation:
                     if citation['DOI'] in current_paper_cites_doi:
@@ -177,7 +178,7 @@ def calculate_disruption_index(doi_entries) -> None:
                         current_only += 1
 
             for citation_doi in current_paper_cites_doi:
-                citation = citation_table.find_one({'doi': citation_doi})
+                citation = citation_table.find_one({'_id': citation_doi})
                 if citation is not None:
                     current_cited_by = list(set(citation['cited_by']))
                     ref_only += len(current_cited_by)
@@ -190,7 +191,7 @@ def calculate_disruption_index(doi_entries) -> None:
             continue
         disruption_index = (current_only - current_and_ref) / total_citations
 
-        citation_table.find_one_and_update(filter={'doi': doi},
+        citation_table.find_one_and_update(filter={'_id': doi},
                                                 update={'$set': {'disruption_index': disruption_index,
                                                                  'current_and_ref': current_and_ref,
                                                                  'ref_only': ref_only,
@@ -204,39 +205,29 @@ if __name__ == '__main__':
     citation_table = database.citations
     files_table = database.files_read
 
-    files_read = set(files_table.find().distinct('_id'))
+    # files_read = set(files_table.find().distinct('_id'))
 
-    # TODO modify this logic to check which publications have already been loaded into the db
-    files = glob.glob('crossref_public_data_file_2021_01/*.json.gz')
+    # files = glob.glob('crossref_public_data_file_2021_01/*.json.gz')
 
-    executor = ProcessPoolExecutor(max_workers=8)
+    chunk_size = 10000
+    executor = ProcessPoolExecutor(max_workers=2)
 
-    tqdm(executor.map(parse_file, files[:1000], repeat(files_read)), total=len(files))
+    #list(tqdm(executor.map(parse_file, files, repeat(files_read)), total=len(files)))
 
-    # Too many entries to use distinct so we have to get a bit fancier and iterate over a cursor
+    # # Too many entries to use distinct so we have to get a bit fancier and iterate over a cursor
     dois = citation_table.find({}, {'_id': 1}, hint=([('_id', 1)]))
 
-    generator = chunk_generator(dois, 50)
+    # # https://stackoverflow.com/questions/9786736/how-to-read-through-collection-in-chunks-by-1000
+    # generator = chunk_generator(dois, 10000)
 
-    # TODO is it possible to read a cursor in chunks? The overhead of creating a db connection
-    # probably slows this down substantially, esp. since it will be run ~40 million times
+    # print('Processing backlinks')
 
-    # https://stackoverflow.com/questions/9786736/how-to-read-through-collection-in-chunks-by-1000
-
-    try:
-        tqdm(executor.map(calculate_backlinks, generator), total=dois.count())
-    except StopIteration:
-        pass
+    # tqdm(executor.map(calculate_backlinks, generator), total=dois.count() // chunk_size)
 
     print('Done!')
+    print('Calculating disruption indices')
 
-    generator = chunk_generator(dois, 100)
-    tqdm(executor.map(calculate_disruption_index, generator), total=dois.count())
-    # graph = build_graph(publications)
+    generator = chunk_generator(dois, chunk_size)
 
-    # graph = calculate_disruption_index(graph)
+    tqdm(executor.map(calculate_disruption_index, generator), total=dois.count() // chunk_size)
 
-    # print(len(graph.nodes))
-
-    # for file in tqdm(files):
-    #     parse_file(file)
