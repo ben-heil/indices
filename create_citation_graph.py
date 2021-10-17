@@ -53,7 +53,6 @@ def parse_entry(entry: dict) -> Publication:
     journal = entry.get('short-container-title', None)
 
     title = entry.get('title', None)
-    journal = entry.get('journal-title')
     if len(title) == 0:
         title = None
     if title is not None:
