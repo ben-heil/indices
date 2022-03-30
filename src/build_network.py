@@ -45,7 +45,7 @@ def parse_metadata(file_path: str) -> pd.DataFrame:
         article_df = pd.DataFrame(articles)
 
         with open(pickle_path, 'wb') as out_file:
-            pickle.dump(out_file)
+            pickle.dump(article_df, out_file)
 
     return article_df
 
