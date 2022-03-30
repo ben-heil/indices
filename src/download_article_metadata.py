@@ -31,16 +31,6 @@ print(f'{len(pubmed_ids):,} articles for English {args.mesh_term}')
 # Make the term safe for putting in a path
 path_term = '_'.join(args.mesh_term.split(' '))
 
-
-# # TODO remove this block?
-# path = pathlib.Path(f'data/pubmed/esummary/{path_term}.xml.xz')
-# path.parent.mkdir(parents=True, exist_ok=True)
-# with lzma.open(path, 'wt') as write_file:
-#     download_pubmed_ids(
-#         pubmed_ids, write_file, endpoint='esummary',
-#         retmax=200, retmin=50, sleep=0, error_sleep=1,
-#     )
-
 path = pathlib.Path(f'data/pubmed/efetch/{path_term}.xml.xz')
 path.parent.mkdir(parents=True, exist_ok=True)
 with lzma.open(path, 'wt') as write_file:
