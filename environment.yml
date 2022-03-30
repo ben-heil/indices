@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - jupyter=1.0
   - networkx=2.5
   - pandas=1.4.1
   - python=3.10.4
