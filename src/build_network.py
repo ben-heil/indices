@@ -26,7 +26,7 @@ def parse_metadata(file_path: str) -> pd.DataFrame:
     This function is based on code from Le et al., and used in accordance with their license:
     https://github.com/greenelab/iscb-diversity/blob/master/02.process-pubmed.ipynb
     '''
-    base_name = os.path.splitext(file_path)
+    base_name = os.path.splitext(file_path)[0]
     pickle_path = base_name + '.pkl'
 
     # For speed, load the pickled version if it's available
