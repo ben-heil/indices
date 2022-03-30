@@ -1,5 +1,6 @@
 import argparse
 import glob
+import os
 import pickle
 
 import networkx as nx
@@ -8,11 +9,6 @@ from pubmedpy.efetch import extract_all
 from pubmedpy.xml import iter_extract_elems
 from tqdm import tqdm
 
-
-
-
-# TODO load citation metadata for filtering
-# TODO add graph saving
 
 def parse_metadata(file_path: str) -> pd.DataFrame:
     '''
@@ -30,15 +26,28 @@ def parse_metadata(file_path: str) -> pd.DataFrame:
     This function is based on code from Le et al., and used in accordance with their license:
     https://github.com/greenelab/iscb-diversity/blob/master/02.process-pubmed.ipynb
     '''
-    articles = []
-    # generator of XML PubmedArticle elements
-    article_elems = iter_extract_elems(file_path, tag='PubmedArticle')
+    base_name = os.path.splitext(file_path)
+    pickle_path = base_name + '.pkl'
 
-    for elem in article_elems:
-        # Example efetch XML for <PubmedArticle> at https://github.com/dhimmel/pubmedpy/blob/f554a06e13e24d661dc5ff93ad07179fb3d7f0af/pubmedpy/data/efetch.xml
-        articles.append(extract_all(elem))
+    # For speed, load the pickled version if it's available
+    if os.path.exists(pickle_path):
+        with open(pickle_path, 'rb') as in_file:
+            article_df = pickle.load(in_file)
+    else:
+        articles = []
+        # generator of XML PubmedArticle elements
+        article_elems = iter_extract_elems(file_path, tag='PubmedArticle')
 
-    return pd.DataFrame(articles)
+        for elem in article_elems:
+            # Example efetch XML for <PubmedArticle> at https://github.com/dhimmel/pubmedpy/blob/f554a06e13e24d661dc5ff93ad07179fb3d7f0af/pubmedpy/data/efetch.xml
+            articles.append(extract_all(elem))
+
+        article_df = pd.DataFrame(articles)
+
+        with open(pickle_path, 'wb') as out_file:
+            pickle.dump(out_file)
+
+    return article_df
 
 
 if __name__ == '__main__':
