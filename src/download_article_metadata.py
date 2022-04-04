@@ -15,26 +15,34 @@ from pubmedpy.eutilities import esearch_query, download_pubmed_ids
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('mesh_term', help='The MeSH term whose article info should be downloaded')
+    parser.add_argument('mesh_term',
+                        help='The MeSH term whose article info should be downloaded')
+    parser.add_argument('--overwrite',
+                        help="Set this flag to redownload terms that "
+                             "already have data",
+                        action='store_true')
 
     args = parser.parse_args()
 
-payload = {
-    'db': 'pubmed',
-    'term': f'"journal article"[pt] AND "{args.mesh_term}"[MeSH Terms] AND English[Language]',
-}
+    # Make the term safe for putting in a path
+    path_term = '_'.join(args.mesh_term.split(' '))
+    path = pathlib.Path(f'data/pubmed/efetch/{path_term}.xml.xz')
 
-pubmed_ids = esearch_query(payload)
-pubmed_ids = sorted(map(int, pubmed_ids))
-print(f'{len(pubmed_ids):,} articles for English {args.mesh_term}')
+    if not path.exists():
+        payload = {
+            'db': 'pubmed',
+            'term': f'"journal article"[pt] AND "{args.mesh_term}"[MeSH Terms] AND English[Language]',
+        }
 
-# Make the term safe for putting in a path
-path_term = '_'.join(args.mesh_term.split(' '))
+        pubmed_ids = esearch_query(payload)
+        pubmed_ids = sorted(map(int, pubmed_ids))
+        print(f'{len(pubmed_ids):,} articles for {args.mesh_term}')
 
-path = pathlib.Path(f'data/pubmed/efetch/{path_term}.xml.xz')
-path.parent.mkdir(parents=True, exist_ok=True)
-with lzma.open(path, 'wt') as write_file:
-    download_pubmed_ids(
-        pubmed_ids, write_file, endpoint='efetch',
-        retmax=200, retmin=50, sleep=0, error_sleep=1,
-    )
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with lzma.open(path, 'wt') as write_file:
+            download_pubmed_ids(
+                pubmed_ids, write_file, endpoint='efetch',
+                retmax=200, retmin=50, sleep=0, error_sleep=1,
+            )
+    else:
+        print(f'{path} exists already; skipping')
