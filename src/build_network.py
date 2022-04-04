@@ -26,7 +26,7 @@ def parse_metadata(file_path: str) -> pd.DataFrame:
     This function is based on code from Le et al., and used in accordance with their license:
     https://github.com/greenelab/iscb-diversity/blob/master/02.process-pubmed.ipynb
     '''
-    base_name = os.path.splitext(file_path)[0]
+    base_name = file_path.split('.')[0]
     pickle_path = base_name + '.pkl'
 
     # For speed, load the pickled version if it's available
@@ -55,26 +55,42 @@ if __name__ == '__main__':
     parser.add_argument('--data_dir',
                          help='The directory containing coci citations',
                          default='data/coci')
-    parser.add_argument('metadata_file',
+    parser.add_argument('--metadata_dir',
                         help='File from download_article_metadata containing info on the '
-                             'articles to add to the network')
-    parser.add_argument('out_file',
-                        help='The file to save the resulting netowrk to')
+                             'articles to add to the network',
+                        default='data/pubmed/efetch')
+    parser.add_argument('--out_dir',
+                        help='The location to save the resulting netoworks to',
+                        default='data/networks')
     args = parser.parse_args()
 
-    print('Parsing metadata...')
-    article_df = parse_metadata(args.metadata_file)
+    print('Initializing graphs...')
+    metadata_files = glob.glob(f'{args.metadata_dir}/*.xz')
+    heading_to_graph = {}
+    heading_to_dois = {}
+    headings = []
+    for metadata_path in metadata_files:
+        heading = os.path.basename(metadata_path)
+        heading = heading.split('.')[0]
+        headings.append(heading)
+        heading_to_graph[heading] = nx.DiGraph()
 
-    print('Building graph...')
+        article_df = parse_metadata(metadata_path)
+        dois = set(article_df['doi'])
+        heading_to_dois[heading] = dois
+
+    print('Building graphs...')
     # For reasons that are unclear to me, this is faster than either inserting all
     # edges at once or constructing the graph in one shot
-    graph = nx.DiGraph()
-    network_dois = set(article_df['doi'])
     for file_path in tqdm(glob.glob(f'{args.data_dir}/*')):
         citation_list = pd.read_csv(file_path)
-        for citing, cited in zip(citation_list['citing'], citation_list['cited']):
-            if citing in network_dois or cited in network_dois:
-                graph.add_edge(citing, cited)
+        for heading in headings:
+            heading_dois = heading_to_dois[heading]
+            for citing, cited in zip(citation_list['citing'], citation_list['cited']):
+                if citing in heading_dois and cited in heading_dois:
+                    heading_to_graph[heading].add_edge(citing, cited)
 
-    with open(args.out_file, 'wb') as out_file:
-        pickle.dump(graph, out_file)
+    for heading in headings:
+        out_file_path = os.path.join(args.out_dir, heading + '.pkl')
+        with open(out_file_path, 'wb') as out_file:
+            pickle.dump(heading_to_graph[heading], out_file)
