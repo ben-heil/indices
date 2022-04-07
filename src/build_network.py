@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 
 def parse_metadata(file_path: str) -> pd.DataFrame:
-    '''
+    """
     Convert the file containing information about a set of articles into a dataframe
 
     Parameters
@@ -25,7 +25,7 @@ def parse_metadata(file_path: str) -> pd.DataFrame:
     Note:
     This function is based on code from Le et al., and used in accordance with their license:
     https://github.com/greenelab/iscb-diversity/blob/master/02.process-pubmed.ipynb
-    '''
+    """
     # I have no idea why there isn't a better way to get rid of double extensions
     base_name = os.path.splitext(os.path.splitext(file_path)[0])[0]
     pickle_path = base_name + '.pkl'
