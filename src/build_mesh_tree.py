@@ -176,5 +176,3 @@ if __name__ == '__main__':
         pickle.dump(filtered_headings, out_file)
 
     os.remove(CACHE_FILE)
-
-    # TODO store results
