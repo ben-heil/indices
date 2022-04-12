@@ -1,0 +1,12 @@
+name: indices 
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - jupyter=1.0
+  - networkx=2.5
+  - pandas=1.4.1
+  - python=3.10.4
+  - tqdm=4.63.1
+  - pip:
+    - git+https://github.com/dhimmel/pubmedpy.git@129ea162214a00cebf561a8ddb011a2828a6ebbf
