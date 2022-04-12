@@ -25,7 +25,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Make the term safe for putting in a path
-    path_term = '_'.join(args.mesh_term.split(' '))
+    path_term = args.mesh_term.replace(' ', '_')
     path = pathlib.Path(f'data/pubmed/efetch/{path_term}.xml.xz')
 
     if not path.exists():
