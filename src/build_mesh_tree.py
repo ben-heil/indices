@@ -1,13 +1,15 @@
 import argparse
 import os
 import pickle
+import sys
+import time
 from typing import List
 
 import pandas as pd
 import tqdm
 from pubmedpy.eutilities import esearch_query
 
-ARTICLE_THRESHOLD = 30000
+ARTICLE_THRESHOLD = 200000
 CACHE_FILE = 'heading.tmp'
 
 class Node():
@@ -65,8 +67,18 @@ def get_heading_article_count(heading: str) -> pd.DataFrame:
         'term': f'"journal article"[pt] AND "{heading}"[MeSH Terms] AND English[Language]',
     }
 
-    pubmed_ids = esearch_query(payload)
-    return len(pubmed_ids)
+    retry_interval = 1
+    while retry_interval < 5000:
+        try:
+            pubmed_ids = esearch_query(payload)
+            return len(pubmed_ids)
+        except Exception as e:
+            print(f'Retrying after {retry_interval} seconds due to {e}', file=sys.stderr)
+            time.sleep(retry_interval)
+            retry_interval *= 4
+
+    raise RuntimeError(f'Repeated timeouts when downloading {heading}', file=sys.stderr)
+
 
 
 def get_headings(current_node: Node) -> List[str]:
