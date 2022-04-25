@@ -63,6 +63,10 @@ if __name__ == '__main__':
     parser.add_argument('--out_dir',
                         help='The location to save the resulting netoworks to',
                         default='data/networks')
+    parser.add_argument('--include_first_degree',
+                        help='Include the citations where only one of the two articles belong '
+                             'to the MeSH heading ',
+                        action='store_true')
     args = parser.parse_args()
 
     print('Initializing graphs...')
@@ -88,10 +92,16 @@ if __name__ == '__main__':
         for heading in headings:
             heading_dois = heading_to_dois[heading]
             for citing, cited in zip(citation_list['citing'], citation_list['cited']):
-                if citing in heading_dois and cited in heading_dois:
-                    heading_to_graph[heading].add_edge(citing, cited)
+                if args.include_first_degree:
+                    if citing in heading_dois or cited in heading_dois:
+                        heading_to_graph[heading].add_edge(citing, cited)
+                else:
+                    if citing in heading_dois and cited in heading_dois:
+                        heading_to_graph[heading].add_edge(citing, cited)
 
     for heading in headings:
+        if args.include_first_degree:
+            heading += '-first_degree'
         out_file_path = os.path.join(args.out_dir, heading + '.pkl')
         with open(out_file_path, 'wb') as out_file:
             pickle.dump(heading_to_graph[heading], out_file)
