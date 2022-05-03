@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 
 def parse_metadata(file_path: str) -> pd.DataFrame:
-    '''
+    """
     Convert the file containing information about a set of articles into a dataframe
 
     Parameters
@@ -25,7 +25,7 @@ def parse_metadata(file_path: str) -> pd.DataFrame:
     Note:
     This function is based on code from Le et al., and used in accordance with their license:
     https://github.com/greenelab/iscb-diversity/blob/master/02.process-pubmed.ipynb
-    '''
+    """
     # I have no idea why there isn't a better way to get rid of double extensions
     base_name = os.path.splitext(os.path.splitext(file_path)[0])[0]
     pickle_path = base_name + '.pkl'
@@ -63,6 +63,10 @@ if __name__ == '__main__':
     parser.add_argument('--out_dir',
                         help='The location to save the resulting netoworks to',
                         default='data/networks')
+    parser.add_argument('--include_first_degree',
+                        help='Include the citations where only one of the two articles belong '
+                             'to the MeSH heading ',
+                        action='store_true')
     args = parser.parse_args()
 
     print('Initializing graphs...')
@@ -83,15 +87,23 @@ if __name__ == '__main__':
     print('Building graphs...')
     # For reasons that are unclear to me, this is faster than either inserting all
     # edges at once or constructing the graph in one shot
+    # TODO save results every X headings (probably ~100 prevents OOM but is still fast)
     for file_path in tqdm(glob.glob(f'{args.data_dir}/*')):
         citation_list = pd.read_csv(file_path)
         for heading in headings:
             heading_dois = heading_to_dois[heading]
             for citing, cited in zip(citation_list['citing'], citation_list['cited']):
-                if citing in heading_dois and cited in heading_dois:
-                    heading_to_graph[heading].add_edge(citing, cited)
+                if args.include_first_degree:
+                    if citing in heading_dois or cited in heading_dois:
+                        heading_to_graph[heading].add_edge(citing, cited)
+                else:
+                    if citing in heading_dois and cited in heading_dois:
+                        heading_to_graph[heading].add_edge(citing, cited)
 
-    for heading in headings:
-        out_file_path = os.path.join(args.out_dir, heading + '.pkl')
-        with open(out_file_path, 'wb') as out_file:
-            pickle.dump(heading_to_graph[heading], out_file)
+        for heading in headings:
+            graph = heading_to_graph[heading]
+            if args.include_first_degree:
+                heading += '-first_degree'
+            out_file_path = os.path.join(args.out_dir, heading + '.pkl')
+            with open(out_file_path, 'wb') as out_file:
+                pickle.dump(graph, out_file)
