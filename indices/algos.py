@@ -21,23 +21,24 @@ def cites_downstream(in_doi: str, graph: DiGraph, out_dois: set) -> bool:
             return True
     return False
 
-def get_citation_count(dois: set, graph: DiGraph) -> int:
+def count_papers_citing(dois: set, graph: DiGraph) -> int:
     """
-    Get the number of citations (in_edges) for the given set of dois.
+    Get the papers citing the given set of dois.
 
     Arguments
     ---------
-    dois: The dois whose citations should be counted
+    dois: The dois whose citations should be listed
     graph: The graph containing all citations
 
     Returns
     -------
     citations: The number of articles citing the given dois
     """
-    citations = 0
+    papers_citing = set()
     for doi in dois:
-        citations += graph.in_degree(doi)
-    return citations
+        for source, _ in graph.in_edges(doi):
+            papers_citing.add(source)
+    return len(papers_citing)
 
 def disruption_index(doi: str, graph: DiGraph) ->  float:
     """
@@ -77,9 +78,9 @@ def disruption_index(doi: str, graph: DiGraph) ->  float:
         else:
             center_only += 1
 
-    # TODO fix to get # of unique papers citing instead of # of citations
-    downstream_citations = get_citation_count(out_dois, graph)
-    downstream_citations -= graph.out_degree(doi)
+    downstream_citations = count_papers_citing(out_dois, graph)
+    # Don't count center paper
+    downstream_citations -= 1
 
     di_denom = center_only + downstream_citations
     di_num = center_only - center_and_cited

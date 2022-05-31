@@ -1,7 +1,7 @@
 import networkx as nx
 import pytest
 
-from indices import disruption_index, cites_downstream, get_citation_count
+from indices import disruption_index, cites_downstream, count_papers_citing
 
 
 def test_max_disruption():
@@ -27,6 +27,9 @@ def test_max_development():
     for i in range(10):
         disrupt_graph.add_edge(f'in_{i}', f'out_{i}')
         disrupt_graph.add_edge(f'in_{i}', 'center')
+
+    disrupt_graph.add_edge('in_1', 'out_2')
+    disrupt_graph.add_edge('in_1', 'out_3')
 
     for i in range(10):
         disrupt_graph.add_edge('center', f'out_{i}')
@@ -74,21 +77,21 @@ def test_cites_downstream():
     assert cites_downstream('in1', graph, out_dois)
 
 
-def test_get_citation_count():
+def test_count_papers_citing():
     graph = nx.DiGraph()
 
     graph.add_edge(1, 2)
     graph.add_edge(1, 3)
     graph.add_edge(1, 4)
-    assert get_citation_count(set([1, 2, 3, 4]), graph) == 3
+    assert count_papers_citing(set([1, 2, 3, 4]), graph) == 1
 
     graph.add_edge(4, 1)
-    assert get_citation_count(set([1, 2, 3, 4]), graph) == 4
+    assert count_papers_citing(set([1, 2, 3, 4]), graph) == 2
 
 def test_zero_citation_count():
     graph = nx.DiGraph()
     graph.add_edge(1337, 1338)
-    assert get_citation_count(set([1337]), graph) == 0
+    assert count_papers_citing(set([1337]), graph) == 0
 
 def test_subset_citation_count():
     graph = nx.DiGraph()
@@ -96,6 +99,6 @@ def test_subset_citation_count():
     graph.add_edge(1, 2)
     graph.add_edge(1, 3)
     graph.add_edge(1, 4)
-    assert get_citation_count(set([1, 2, 3]), graph) == 2
+    assert count_papers_citing(set([1, 2, 3]), graph) == 1
 
 
