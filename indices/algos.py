@@ -25,6 +25,7 @@ def disruption_index(doi: str, graph: DiGraph) ->  float:
         out_dois.add(out_node)
 
     for in_node, _ in graph.in_edges(doi):
+        print(graph.edges(in_node))
         if cites_downstream(in_node, graph, out_dois):
             center_and_cited += 1
         else:
