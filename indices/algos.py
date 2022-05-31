@@ -25,7 +25,6 @@ def disruption_index(doi: str, graph: DiGraph) ->  float:
         out_dois.add(out_node)
 
     for in_node, _ in graph.in_edges(doi):
-        print(graph.edges(in_node))
         if cites_downstream(in_node, graph, out_dois):
             center_and_cited += 1
         else:
@@ -40,9 +39,5 @@ def disruption_index(doi: str, graph: DiGraph) ->  float:
     # Return 0 for singleton nodes
     if di_denom == 0:
         return 0
-
-    print(f'Center only: {center_only}')
-    print(f'Center and downstream: {center_and_cited}')
-    print(f'Downstream total: {downstream_citations}')
 
     return di_num / di_denom
