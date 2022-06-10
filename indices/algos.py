@@ -48,6 +48,11 @@ def disruption_index(doi: str, graph: DiGraph) ->  float:
     `doi` but none of its children and the number of articles citing both `doi` and at least
     one of its children.
 
+    Intuitively, a paper with values near 1 is "disruptive" in that the papers citing it don't
+    cite the papers it cites, while a paper with a value near -1 is "developmental" in that
+    the papers citing it also cite the papers it cites. Papers with values near zero are deemed
+    neither disruptive nor developmental.
+
     Arguments
     ---------
     doi: The doi to calculate the disruption index for
