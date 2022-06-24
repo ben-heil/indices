@@ -40,6 +40,27 @@ def count_papers_citing(dois: set, graph: DiGraph) -> int:
             papers_citing.add(source)
     return len(papers_citing)
 
+
+def all_nodes_disruption_index(graph) -> dict:
+    """
+    Run the disruption_index function on all nodes
+
+    This function wraps `disruption_index` to make it behave the same way as networkx
+    graph centrality functions
+
+    Arguments
+    ---------
+    graph: The graph containing all citations
+
+    Returns
+    -------
+    node_to_metric: A dict mapping each graph node to its corresponding disruption index value
+    """
+    node_to_metric = {}
+    for node in graph.nodes:
+        node_to_metric[node] = disruption_index(node, graph)
+    return node_to_metric
+
 def disruption_index(doi: str, graph: DiGraph) ->  float:
     """
     Calculates the disruption index from Wu, Wang, and Evans.
