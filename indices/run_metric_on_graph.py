@@ -6,6 +6,8 @@ import pickle
 
 import networkx as nx
 
+import algos
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('graph_file',
@@ -28,7 +30,7 @@ if __name__ == '__main__':
     elif args.metric == 'pagerank':
         node_to_metric = nx.pagerank(graph)
     elif args.metric == 'disruption_idx':
-        raise NotImplementedError
+        node_to_metric = algos.all_nodes_disruption_index(graph)
 
     # Build path to save the results to
     in_file_name = os.path.basename(args.graph_file)
