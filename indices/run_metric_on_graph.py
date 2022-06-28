@@ -24,6 +24,9 @@ if __name__ == '__main__':
     with open(args.graph_file, 'rb') as in_file:
         graph = pickle.load(in_file)
 
+    # Remove self-loops
+    graph.remove_edges_from(nx.selfloop_edges(graph))
+
     # Run metric on graph
     if args.metric == 'betweenness_centrality':
         node_to_metric = nx.betweenness_centrality(graph, k=100)
