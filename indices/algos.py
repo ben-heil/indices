@@ -40,6 +40,27 @@ def count_papers_citing(dois: set, graph: DiGraph) -> int:
             papers_citing.add(source)
     return len(papers_citing)
 
+
+def all_nodes_disruption_index(graph) -> dict:
+    """
+    Run the disruption_index function on all nodes
+
+    This function wraps `disruption_index` to make it behave the same way as networkx
+    graph centrality functions
+
+    Arguments
+    ---------
+    graph: The graph containing all citations
+
+    Returns
+    -------
+    node_to_metric: A dict mapping each graph node to its corresponding disruption index value
+    """
+    node_to_metric = {}
+    for node in graph.nodes:
+        node_to_metric[node] = disruption_index(node, graph)
+    return node_to_metric
+
 def disruption_index(doi: str, graph: DiGraph) ->  float:
     """
     Calculates the disruption index from Wu, Wang, and Evans.
@@ -74,24 +95,35 @@ def disruption_index(doi: str, graph: DiGraph) ->  float:
     # Nodes citing both the node of interest and the articles it cites
     center_and_cited = 0
 
-    for _, out_node in graph.out_edges(doi):
-        out_dois.add(out_node)
+    out_dois = set(graph.successors(doi))
 
-    for in_node, _ in graph.in_edges(doi):
+    for in_node in graph.predecessors(doi):
         if cites_downstream(in_node, graph, out_dois):
             center_and_cited += 1
         else:
             center_only += 1
 
     downstream_citations = count_papers_citing(out_dois, graph)
+
+    # If we're missing data about what the paper cites, the metric probably isn't meaningful
+    if downstream_citations == 0:
+        return None
+
     # Don't count center paper
     downstream_citations -= 1
 
     di_denom = center_only + downstream_citations
     di_num = center_only - center_and_cited
 
-    # Return 0 for singleton nodes
+    # Return None for singleton nodes
     if di_denom == 0:
-        return 0
+        return None
+
+    try:
+        assert abs(di_num / di_denom) <= 1
+    except AssertionError as e:
+        print(downstream_citations)
+        print(doi)
+        raise AssertionError
 
     return di_num / di_denom
