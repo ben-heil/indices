@@ -28,21 +28,19 @@ if __name__ == '__main__':
 
     print('Initializing graphs...')
     metadata_files = glob.glob(f'{args.metadata_dir}/*.xz')
-    heading_to_graph = {}
     heading_to_dois = {}
     headings = []
     for metadata_path in metadata_files:
         heading = os.path.basename(metadata_path)
         heading = heading.split('.')[0]
         headings.append(heading)
-        heading_to_graph[heading] = nx.DiGraph()
 
         article_df = parse_metadata(metadata_path)
         dois = set(article_df['doi'])
         heading_to_dois[heading] = dois
 
     print('Building graphs...')
-    build_graphs(args.data_dir, heading_to_dois, args.include_first_degree)
+    heading_to_graph = build_graphs(args.data_dir, heading_to_dois, args.include_first_degree)
 
     for heading in heading_to_graph.keys():
         graph = heading_to_graph[heading]
