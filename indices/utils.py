@@ -1,7 +1,7 @@
 import glob
 import os
 import pickle
-from typing import List, Dict
+from typing import List, Dict, Union
 
 import networkx as nx
 import pandas as pd
@@ -51,7 +51,7 @@ def parse_metadata(file_path: str) -> pd.DataFrame:
 
 def build_graphs(coci_dir: str,
                          heading_to_dois: Dict[str, List[str]],
-                         include_first_degree: bool=False):
+                         include_first_degree: bool=False) -> Dict[str, nx.DiGraph]:
     """
     Build the citation graphs for all MeSH headings provided
 
@@ -80,3 +80,36 @@ def build_graphs(coci_dir: str,
                         heading_to_graph[heading].add_edge(citing, cited)
 
     return heading_to_graph
+
+def parse_mesh_headings(metadata_dir: str,
+                        filter_headings: Union[set, None]=None
+                        ) -> Dict[str, List[str]]:
+    """
+    Read metadata from MeSH stoed in the given directory and use it to generate
+    a mapping between dois and
+
+    Arguments
+    ---------
+    metadata_dir: The directory storing the xzipped MeSH metadata
+    filter_headings: Either a set containing the headings to keep, or None to indicate
+                     that all headings should be returned
+
+    Returns
+    -------
+    heading_to_dois: A dict mapping MeSH headings to the dois of publications that fall under them
+    """
+    metadata_files = glob.glob(f'{metadata_dir}/*.xz')
+    headings = []
+    heading_to_dois = {}
+    for metadata_path in metadata_files:
+        heading = os.path.basename(metadata_path)
+        heading = heading.split('.')[0]
+        if heading not in filter_headings and filter_headings is not None:
+            continue
+        headings.append(heading)
+
+        article_df = parse_metadata(metadata_path)
+        dois = set(article_df['doi'])
+        heading_to_dois[heading] = dois
+
+    return heading_to_dois
