@@ -1,4 +1,3 @@
-python src/build_network.py 
-python src/build_network.py --include_first_degree
-
+python indices/build_single_heading_networks.py
+python indices/build_single_heading_networks.py --include_first_degree
 
