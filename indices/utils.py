@@ -72,6 +72,10 @@ def build_graphs(coci_dir: str,
         citation_list = pd.read_csv(file_path)
         for heading, dois in heading_to_dois.items():
             for citing, cited in zip(citation_list['citing'], citation_list['cited']):
+                if citing is None or cited is None:
+                    continue
+                if len(citing) == 0 or len(cited) == 0:
+                    continue
                 if include_first_degree:
                     if citing in dois or cited in dois:
                         heading_to_graph[heading].add_edge(citing, cited)
@@ -104,7 +108,7 @@ def parse_mesh_headings(metadata_dir: str,
     for metadata_path in metadata_files:
         heading = os.path.basename(metadata_path)
         heading = heading.split('.')[0]
-        if heading not in filter_headings and filter_headings is not None:
+        if filter_headings is not None and heading not in filter_headings:
             continue
         headings.append(heading)
 
