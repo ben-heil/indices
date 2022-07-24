@@ -53,6 +53,10 @@ if __name__ == '__main__':
         heading1_network = pairwise_network.subgraph(heading1_dois).copy()
         heading2_network = pairwise_network.subgraph(heading2_dois).copy()
 
+        # Remove nodes with no edges (i.e. citations)
+        heading1_network.remove_nodes_from(list(nx.isolates(heading1_network)))
+        heading2_network.remove_nodes_from(list(nx.isolates(heading2_network)))
+
         if shuffle_number is None:
             filename1 = f'{heading1}-{heading2}.pkl'
             filename2 = f'{heading2}-{heading1}.pkl'
