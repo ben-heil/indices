@@ -3,7 +3,6 @@ import glob
 import os
 import pickle as pkl
 import re
-from typing import Set
 from tqdm import tqdm
 
 import networkx as nx
@@ -30,12 +29,12 @@ if __name__ == '__main__':
 
     paired_network_files = glob.glob(os.path.join(args.in_dir, '*+*'))
 
-    for file in paired_network_files:
+    for file in tqdm(paired_network_files):
         file_base = os.path.basename(file)
         file_noext = os.path.splitext(file_base)[0]
         shuffle_number = None
         shuffle_regex = '_[0-9]+.pkl'
-        if re.search(shuffle_regex, file_noext):
+        if re.search(shuffle_regex, file_base):
             shuffle_number = file_noext.split('_')[-1]
             headings = '_'.join(file_noext.split('_')[:-1])
             heading1, heading2 = headings.split('+')
@@ -68,6 +67,3 @@ if __name__ == '__main__':
             pkl.dump(heading1_network, out_file)
         with open(os.path.join(args.out_dir, filename2), 'wb') as out_file:
             pkl.dump(heading2_network, out_file)
-
-
-# TODO assert that the unshuffled split graphs are the same as the originals
