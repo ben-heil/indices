@@ -17,7 +17,7 @@ if __name__ == '__main__':
                              'articles to add to the network',
                         default='data/pubmed/efetch')
     parser.add_argument('--in_dir',
-                        help='The directory containing networks to split. Paired networks will '\
+                        help='The directory containing networks to split. Paired networks will '
                              'be detected via the "+" character in their names',
                         default='data/networks')
     parser.add_argument('--out_dir',
