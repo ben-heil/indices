@@ -1,7 +1,5 @@
 import itertools
 
-# Split combined shuffled networks (split_pairwise_networks.py)
-
 HEADINGS = ["developmental_biology", "genetics","microbiology",
             # Informatics subheadings
             "cheminformatics", "computational_biology", "consumer_health_informatics",
@@ -16,10 +14,6 @@ SPLIT_HEADINGS2 = [h2 + '-' + h1 for h1, h2 in itertools.combinations(HEADINGS, 
 
 rule all:
     input:
-        # expand("data/networks/{heading}.pkl", heading=HEADINGS),
-        # expand("data/shuffled_networks/{heading}_{shuffle}.pkl",
-        #        heading=HEADINGS
-        #        shuffle=list(range(100))),
         expand("data/networks/{split_heading}_{shuffle}.pkl",
                 split_heading=SPLIT_HEADINGS, shuffle=list(range(100))),
         expand("data/networks/{split_heading}_{shuffle}.pkl",
