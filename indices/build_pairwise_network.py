@@ -24,7 +24,7 @@ if __name__ == '__main__':
                         help='Include the citations where only one of the two articles belong '
                              'to the MeSH heading ',
                         action='store_true')
-    parser.add_argument('headings_to_process', nargs='2',
+    parser.add_argument('headings_to_process', nargs=2,
                         help='The MeSH headings to make pairwise networks from')
     args = parser.parse_args()
 
