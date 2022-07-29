@@ -1,10 +1,10 @@
 import itertools
 
-HEADINGS = ["developmental_biology", "genetics","microbiology",
+HEADINGS = ["botany", "developmental_biology", "genetics","microbiology", "ecology",
             # Informatics subheadings
-            "cheminformatics", "computational_biology", "consumer_health_informatics",
+            "cheminformatics", "computational_biology", "consumer_health_informatics","medical_informatics",
             # Algorithms subheadings
-            "artificial_intelligence",
+            "artificial_intelligence", "latent_class_analysis",
             ]
 
 COCI_DIR = '/mnt/SlowData/coci'
@@ -17,9 +17,11 @@ wildcard_constraints:
     shuffle="\d+",
     # The headings wildcard used in shuffle_networks can contain letters, underscores,
     # and dashes, but no other characters such as numbers
-    heading="[a-z]_-+"
+    heading="[a-z_-]+",
+    heading1="[a-z_-]+",
+    heading2="[a-z_-]+",
 
-
+ruleorder: split_combined_shuffled_networks > shuffle_networks
 
 rule all:
     input:
