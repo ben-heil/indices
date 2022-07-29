@@ -12,11 +12,20 @@ COCI_DIR = '/mnt/SlowData/coci'
 SPLIT_HEADINGS = [h1 + '-' + h2 for h1, h2 in itertools.combinations(sorted(HEADINGS), 2)]
 SPLIT_HEADINGS2 = [h2 + '-' + h1 for h1, h2 in itertools.combinations(sorted(HEADINGS), 2)]
 
+wildcard_constraints:
+    # Random seeds should be numbers
+    shuffle="\d+",
+    # The headings wildcard used in shuffle_networks can contain letters, underscores,
+    # and dashes, but no other characters such as numbers
+    heading="[a-z]_-+"
+
+
+
 rule all:
     input:
-        expand("data/networks/{split_heading}_{shuffle}.pkl",
+        expand("output/shuffle_results/{split_heading}_{shuffle}-pagerank.pkl",
                 split_heading=SPLIT_HEADINGS, shuffle=list(range(100))),
-        expand("data/networks/{split_heading}_{shuffle}.pkl",
+        expand("output/shuffle_results/{split_heading}_{shuffle}-pagerank.pkl",
                 split_heading=SPLIT_HEADINGS2, shuffle=list(range(100))),
 
 rule download_citation_data:
@@ -69,7 +78,15 @@ rule split_combined_shuffled_networks:
     input:
         "data/shuffled_networks/{heading1}+{heading2}_{shuffle}.pkl"
     output:
-        "data/networks/{heading1}-{heading2}_{shuffle}.pkl",
-        "data/networks/{heading2}-{heading1}_{shuffle}.pkl"
+        "data/shuffled_networks/{heading1}-{heading2}_{shuffle}.pkl",
+        "data/shuffled_networks/{heading2}-{heading1}_{shuffle}.pkl"
     shell:
         "python indices/split_pairwise_network.py {input}"
+
+rule calculate_shuffled_pagerank:
+    input:
+        "data/shuffled_networks/{heading1}-{heading2}_{shuffle}.pkl"
+    output:
+        "output/shuffle_results/{heading1}-{heading2}_{shuffle}-pagerank.pkl"
+    shell:
+        "python indices/run_metric_on_graph.py {input} pagerank output/shuffle_results"
