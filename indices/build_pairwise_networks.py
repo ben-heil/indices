@@ -1,11 +1,10 @@
-import glob
 import itertools
 import pickle as pkl
 import os
 
 import argparse
 
-from utils import parse_metadata, build_graphs, parse_mesh_headings
+from utils import build_graphs, parse_mesh_headings
 
 
 if __name__ == '__main__':
@@ -24,7 +23,7 @@ if __name__ == '__main__':
                         help='Include the citations where only one of the two articles belong '
                              'to the MeSH heading ',
                         action='store_true')
-    parser.add_argument('headings_to_process', nargs=2,
+    parser.add_argument('headings_to_process', nargs='+',
                         help='The MeSH headings to make pairwise networks from')
     args = parser.parse_args()
 
@@ -35,7 +34,7 @@ if __name__ == '__main__':
     heading_to_dois = parse_mesh_headings(args.metadata_dir, headings_to_process)
 
     paired_headings = {}
-    for heading1, heading2 in itertools.combinations(list(heading_to_dois.keys()), 2):
+    for heading1, heading2 in itertools.combinations(sorted(list(heading_to_dois.keys())), 2):
         first_dois = heading_to_dois[heading1]
         second_dois = heading_to_dois[heading2]
         combined_dois = first_dois.union(second_dois)
