@@ -27,6 +27,11 @@ rule all:
                 split_heading=SPLIT_HEADINGS, shuffle=list(range(100))),
         expand("output/shuffle_results/{split_heading}_{shuffle}-pagerank.pkl",
                 split_heading=SPLIT_HEADINGS2, shuffle=list(range(100))),
+        expand("output/{split_heading}-pagerank.pkl",
+                split_heading=SPLIT_HEADINGS, shuffle=list(range(100))),
+        expand("output/{split_heading}-pagerank.pkl",
+                split_heading=SPLIT_HEADINGS2, shuffle=list(range(100))),
+
 
 rule download_citation_data:
     output:
@@ -83,6 +88,15 @@ rule split_combined_shuffled_networks:
     shell:
         "python indices/split_pairwise_network.py {input}"
 
+rule split_combined_networks:
+    input:
+        "data/networks/{heading1}+{heading2}.pkl"
+    output:
+        "data/networks/{heading1}-{heading2}.pkl",
+        "data/networks/{heading2}-{heading1}.pkl"
+    shell:
+        "python indices/split_pairwise_network.py {input}"
+
 rule calculate_shuffled_pagerank:
     input:
         "data/shuffled_networks/{heading1}-{heading2}_{shuffle}.pkl"
@@ -90,3 +104,11 @@ rule calculate_shuffled_pagerank:
         "output/shuffle_results/{heading1}-{heading2}_{shuffle}-pagerank.pkl"
     shell:
         "python indices/run_metric_on_graph.py {input} pagerank output/shuffle_results"
+
+rule calculate_pagerank:
+    input:
+        "data/networks/{heading1}-{heading2}.pkl"
+    output:
+        "output/{heading1}-{heading2}-pagerank.pkl"
+    shell:
+        "python indices/run_metric_on_graph.py {input} pagerank output"
