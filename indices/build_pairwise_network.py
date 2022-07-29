@@ -28,6 +28,9 @@ if __name__ == '__main__':
                         help='The MeSH headings to make pairwise networks from')
     args = parser.parse_args()
 
+    if len(args.headings_to_process) < 2:
+        parser.error('You must include at least two headings to build pairwise networks')
+
     headings_to_process = set(args.headings_to_process)
     heading_to_dois = parse_mesh_headings(args.metadata_dir, headings_to_process)
 
