@@ -9,8 +9,8 @@ HEADINGS = ["developmental_biology", "genetics","microbiology",
 
 COCI_DIR = '/mnt/SlowData/coci'
 
-SPLIT_HEADINGS = [h1 + '-' + h2 for h1, h2 in itertools.combinations(HEADINGS, 2)]
-SPLIT_HEADINGS2 = [h2 + '-' + h1 for h1, h2 in itertools.combinations(HEADINGS, 2)]
+SPLIT_HEADINGS = [h1 + '-' + h2 for h1, h2 in itertools.combinations(sorted(HEADINGS), 2)]
+SPLIT_HEADINGS2 = [h2 + '-' + h1 for h1, h2 in itertools.combinations(sorted(HEADINGS), 2)]
 
 rule all:
     input:
@@ -45,19 +45,22 @@ rule build_single_heading_networks:
         "--data_dir " + COCI_DIR
 
 rule build_pairwise_networks:
+    threads:
+        8
     input:
         COCI_DIR
     output:
-        "data/networks/{heading1}+{heading2}.pkl"
+        ["data/networks/" + h1 + "+" + h2 + ".pkl" for h1, h2 in itertools.combinations(sorted(HEADINGS), 2)]
     shell:
-        "python indices/build_pairwise_network.py {wildcards.heading1} {wildcards.heading2} "
-        "--data_dir " + COCI_DIR
+        "python indices/build_pairwise_networks.py " + ' '.join(HEADINGS) + ' '
+        " --data_dir " + COCI_DIR + " "
+
 
 rule shuffle_networks:
     input:
         "data/networks/{heading}.pkl"
     output:
-        "data/shuffled_networks/{heading}_{shuffle}.pkl"
+        ["data/shuffled_networks/{heading}_"+ str(i) + ".pkl" for i in range(100)]
 
     shell:
         "python indices/shuffle_graph.py {input} data/shuffled_networks"
