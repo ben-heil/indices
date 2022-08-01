@@ -11,10 +11,9 @@ from utils import parse_mesh_headings
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('in_file',
-                        help='The file to be split',
-                        default='data/networks')
+                        help='The file to be split',)
     parser.add_argument('--metadata_dir',
-                        help='File from download_article_metadata containing info on the '
+                        help='Files from download_article_metadata containing info on the '
                              'articles to add to the network',
                         default='data/pubmed/efetch')
     parser.add_argument('--out_dir',
