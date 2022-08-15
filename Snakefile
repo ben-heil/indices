@@ -1,11 +1,16 @@
 import itertools
 
-HEADINGS = ["botany", "developmental_biology", "genetics","microbiology", "ecology",
-            # Informatics subheadings
-            "cheminformatics", "computational_biology", "consumer_health_informatics","medical_informatics",
-            # Algorithms subheadings
-            "artificial_intelligence", "latent_class_analysis",
-            ]
+# HEADINGS = ["botany", "developmental_biology", "genetics","microbiology", "ecology",
+#             # Informatics subheadings
+#             "cheminformatics", "computational_biology", "consumer_health_informatics","medical_informatics",
+#             # Algorithms subheadings
+#             "artificial_intelligence", "latent_class_analysis",
+#             ]
+
+HEADINGS = ["artificial_intelligence", "computational_biology", "ecology", "genetics",
+            "medical_informatics", "microbiology"]
+
+#HEADINGS = ["artificial_intelligence", "computational_biology"]
 
 COCI_DIR = '/mnt/SlowData/coci'
 
@@ -17,23 +22,23 @@ wildcard_constraints:
     shuffle="\d+",
     # The headings wildcard used in shuffle_networks can contain letters, underscores,
     # and dashes, but no other characters such as numbers
-    heading="[a-z_-]+",
+    combined_heading="[a-z_]*\+[a-z_]*",
+    heading="[a-z_]+",
     heading1="[a-z_-]+",
     heading2="[a-z_-]+",
 
-ruleorder: split_combined_shuffled_networks > shuffle_networks
-
 rule all:
     input:
-        expand("output/shuffle_results/{split_heading}_{shuffle}-pagerank.pkl",
+        expand("output/shuffle_results/{split_heading}-{shuffle}-pagerank.pkl",
                 split_heading=SPLIT_HEADINGS, shuffle=list(range(100))),
-        expand("output/shuffle_results/{split_heading}_{shuffle}-pagerank.pkl",
+        expand("output/shuffle_results/{split_heading}-{shuffle}-pagerank.pkl",
                 split_heading=SPLIT_HEADINGS2, shuffle=list(range(100))),
         expand("output/{split_heading}-pagerank.pkl",
                 split_heading=SPLIT_HEADINGS, shuffle=list(range(100))),
         expand("output/{split_heading}-pagerank.pkl",
                 split_heading=SPLIT_HEADINGS2, shuffle=list(range(100))),
-
+        expand("output/{heading}-pagerank.pkl",
+                heading=HEADINGS)
 
 rule download_citation_data:
     output:
@@ -66,51 +71,58 @@ rule build_pairwise_networks:
     input:
         COCI_DIR
     output:
-        ["data/networks/" + h1 + "+" + h2 + ".pkl" for h1, h2 in itertools.combinations(sorted(HEADINGS), 2)]
+        ["data/combined_networks/" + h1 + "+" + h2 + ".pkl" for h1, h2 in itertools.combinations(sorted(HEADINGS), 2)]
     shell:
         "python indices/build_pairwise_networks.py " + ' '.join(HEADINGS) + ' '
-        " --data_dir " + COCI_DIR + " "
+        " --data_dir " + COCI_DIR + " --out_dir data/combined_networks "
 
-
-rule shuffle_networks:
+rule shuffle_combined_networks:
     input:
-        "data/networks/{heading}.pkl"
+        "data/combined_networks/{combined_heading}.pkl"
     output:
-        ["data/shuffled_networks/{heading}_"+ str(i) + ".pkl" for i in range(100)]
+        ["data/shuffled_combined_networks/{combined_heading}-"+ str(i) + ".pkl" for i in range(100)]
 
     shell:
-        "python indices/shuffle_graph.py {input} data/shuffled_networks"
+        "python indices/shuffle_graph.py {input} data/shuffled_combined_networks "
 
 rule split_combined_shuffled_networks:
     input:
-        "data/shuffled_networks/{heading1}+{heading2}_{shuffle}.pkl"
+        "data/shuffled_combined_networks/{heading1}+{heading2}-{shuffle}.pkl"
     output:
-        "data/shuffled_networks/{heading1}-{heading2}_{shuffle}.pkl",
-        "data/shuffled_networks/{heading2}-{heading1}_{shuffle}.pkl"
+        "data/shuffled_combined_networks/{heading1}-{heading2}-{shuffle}.pkl",
+        "data/shuffled_combined_networks/{heading2}-{heading1}-{shuffle}.pkl"
     shell:
-        "python indices/split_pairwise_network.py {input}"
+        "python indices/split_pairwise_network.py {input} --out_dir data/shuffled_combined_networks"
 
 rule split_combined_networks:
     input:
-        "data/networks/{heading1}+{heading2}.pkl"
+        "data/combined_networks/{heading1}+{heading2}.pkl"
     output:
-        "data/networks/{heading1}-{heading2}.pkl",
-        "data/networks/{heading2}-{heading1}.pkl"
+        "data/combined_networks/{heading1}-{heading2}.pkl",
+        "data/combined_networks/{heading2}-{heading1}.pkl"
     shell:
-        "python indices/split_pairwise_network.py {input}"
+        "python indices/split_pairwise_network.py {input} --out_dir data/combined_networks"
 
-rule calculate_shuffled_pagerank:
+rule calculate_combined_pagerank:
     input:
-        "data/shuffled_networks/{heading1}-{heading2}_{shuffle}.pkl"
+        "data/combined_networks/{heading1}-{heading2}.pkl"
     output:
-        "output/shuffle_results/{heading1}-{heading2}_{shuffle}-pagerank.pkl"
+        "output/{heading1}-{heading2}-pagerank.pkl"
+    shell:
+        "python indices/run_metric_on_graph.py {input} pagerank output"
+
+rule calculate_combined_shuffled_pagerank:
+    input:
+        "data/shuffled_combined_networks/{heading1}-{heading2}-{shuffle}.pkl"
+    output:
+        "output/shuffle_results/{heading1}-{heading2}-{shuffle}-pagerank.pkl"
     shell:
         "python indices/run_metric_on_graph.py {input} pagerank output/shuffle_results"
 
 rule calculate_pagerank:
     input:
-        "data/networks/{heading1}-{heading2}.pkl"
+        "data/networks/{heading}.pkl"
     output:
-        "output/{heading1}-{heading2}-pagerank.pkl"
+        "output/{heading}-pagerank.pkl"
     shell:
         "python indices/run_metric_on_graph.py {input} pagerank output"
