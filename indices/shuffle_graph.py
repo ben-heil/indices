@@ -33,7 +33,7 @@ if __name__ == '__main__':
                                                max_tries=100*n_edges,
                                                seed=42*i)
 
-        out_file_name = f'{file_base}_{i}.pkl'
+        out_file_name = f'{file_base}-{i}.pkl'
         out_file_path = os.path.join(args.out_dir, out_file_name)
 
         with open(out_file_path, 'wb') as out_path:
