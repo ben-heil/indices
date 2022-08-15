@@ -54,8 +54,8 @@ if __name__ == '__main__':
         filename1 = f'{heading1}-{heading2}.pkl'
         filename2 = f'{heading2}-{heading1}.pkl'
     else:
-        filename1 = f'{heading1}-{heading2}_{shuffle_number}.pkl'
-        filename2 = f'{heading2}-{heading1}_{shuffle_number}.pkl'
+        filename1 = f'{heading1}-{heading2}-{shuffle_number}.pkl'
+        filename2 = f'{heading2}-{heading1}-{shuffle_number}.pkl'
 
     with open(os.path.join(args.out_dir, filename1), 'wb') as out_file:
         pkl.dump(heading1_network, out_file)
