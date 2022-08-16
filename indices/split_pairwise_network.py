@@ -27,10 +27,9 @@ if __name__ == '__main__':
     file_base = os.path.basename(file)
     file_noext = os.path.splitext(file_base)[0]
     shuffle_number = None
-    shuffle_regex = '_[0-9]+.pkl'
+    shuffle_regex = '-[0-9]+.pkl'
     if re.search(shuffle_regex, file_base):
-        shuffle_number = file_noext.split('_')[-1]
-        headings = '_'.join(file_noext.split('_')[:-1])
+        headings, shuffle_number = file_noext.split('-')
         heading1, heading2 = headings.split('+')
     else:
         heading1, heading2 = file_noext.split('+')
