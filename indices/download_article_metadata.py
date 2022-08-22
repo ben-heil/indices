@@ -9,7 +9,6 @@ and is used in accordance with their licenses
 import argparse
 import pathlib
 import lzma
-import tqdm
 
 from pubmedpy.eutilities import esearch_query, download_pubmed_ids
 
@@ -26,6 +25,8 @@ if __name__ == '__main__':
 
     # Make the term safe for putting in a path
     path_term = args.mesh_term.replace(' ', '_')
+    path_term = path_term('-', '_')
+    path_term = path_term.lower()
     path = pathlib.Path(f'data/pubmed/efetch/{path_term}.xml.xz')
 
     if not path.exists():
