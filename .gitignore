@@ -1,3 +1,4 @@
 .vscode/
 *pycache*
 *.egg-info*
+ncbi_api_key.txt
