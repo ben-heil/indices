@@ -8,6 +8,7 @@ dependencies:
   - lxml=4.8.0
   - networkx=2.5
   - pandas=1.4.1
+  - pip=22.0.4
   - python=3.10.4
   - ratelimit=2.2.1
   - requests=2.27.1
