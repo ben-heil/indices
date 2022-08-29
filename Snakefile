@@ -7,8 +7,26 @@ import itertools
 #             "artificial_intelligence", "latent_class_analysis",
 #             ]
 
-HEADINGS = ["artificial_intelligence", "computational_biology", "ecology", "genetics",
-            "medical_informatics", "microbiology"]
+#HEADINGS = ["artificial_intelligence", "computational_biology", "ecology", "genetics",
+#            "medical_informatics", "microbiology"]
+
+HEADINGS = ["Anatomy", "Histocytochemistry", "Immunochemistry", "Molecular Biology",
+            "Proteomics", "Metabolomics", "Human Genetics", "Genetics Population",
+            "Genetic Research", "Food Microbiology", "Soil Microbiology", "Water Microbiology",
+            "Computational Biology", "Biophysics", "Biotechnology", "Neurosciences",
+            "Pharmacology", "Physiology", "Toxicology", "Chemistry Pharmaceutical",
+            "Crystallography", "Electrochemistry", "Photochemistry", "Statistics as Topic",
+            "Nonlinear Dynamics", "Acoustics", "Electronics", "Magnetics",
+            "Nuclear Physics", "Rheology", "Fiber Optic Technology", "Microscopy",
+            "Operations Research", "Research Design", "Health Services Research",
+            "Nursing Evaluation Research", "Nursing Methodology Research",
+            "Outcome Assessment Health Care", "Translational Research Biomedical",
+            "Empirical Research", "Nanotechnology", "Microtechnology", "Ecology",
+            "Geography", "Paleontology"]
+
+
+# TODO use pickle file to read in headings
+HEADINGS = [h.lower().replace(' ', '_') for h in HEADINGS]
 
 #HEADINGS = ["artificial_intelligence", "computational_biology"]
 
