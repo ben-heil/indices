@@ -1,9 +1,8 @@
 import argparse
-from indices.utils import parse_mesh_headings
 import os
 import pickle
 
-from utils import build_graphs, parse_metadata
+from utils import build_graphs, parse_mesh_headings
 
 
 if __name__ == '__main__':
