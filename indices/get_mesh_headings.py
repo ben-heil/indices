@@ -143,7 +143,7 @@ if __name__ == '__main__':
                     # H01 is the code for Natural Science Disciplines,
                     # L01 is the code for information science
                     # TODO consider adding Humanities (k01) as well
-                    if 'H01' not in id and 'L01' not in id:
+                    if 'H01' not in id:
                         continue
                     depth = len(id.split('.'))
 
