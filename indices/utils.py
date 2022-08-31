@@ -1,13 +1,33 @@
+import collections
 import glob
 import os
 import pickle
 from typing import List, Dict, Union
 
+import lxml.etree
 import networkx as nx
 import pandas as pd
-from pubmedpy.efetch import extract_all
+from pubmedpy.efetch import extract_identifiers
 from pubmedpy.xml import iter_extract_elems
 from tqdm import tqdm
+
+
+def extract_all(elem: lxml.etree._Element) -> dict:
+    """
+    Extract a dictionary of all supported fields from a <PubmedArticle> XML element
+
+    Note
+    ----
+    This code is from pubmedpy, modified to omit the authors, nlm_ids, and publication dates
+    to save memory and decrease runtime
+    https://github.com/dhimmel/pubmedpy/blob/main/pubmedpy/efetch.py
+    """
+    result = collections.OrderedDict()
+    result.update(extract_identifiers(elem))
+    result["journal"] = elem.findtext("MedlineCitation/MedlineJournalInfo/MedlineTA")
+    result["title"] = elem.findtext("MedlineCitation/Article/ArticleTitle")
+    return result
+
 
 def parse_metadata(file_path: str) -> pd.DataFrame:
     """
@@ -38,9 +58,21 @@ def parse_metadata(file_path: str) -> pd.DataFrame:
         # generator of XML PubmedArticle elements
         article_elems = iter_extract_elems(file_path, tag='PubmedArticle')
 
-        for elem in article_elems:
+        seen_pmids = set()
+        i = 0
+        for elem in tqdm(article_elems):
             # Example efetch XML for <PubmedArticle> at https://github.com/dhimmel/pubmedpy/blob/f554a06e13e24d661dc5ff93ad07179fb3d7f0af/pubmedpy/data/efetch.xml
-            articles.append(extract_all(elem))
+            result = extract_all(elem)
+
+            try:
+                assert result['doi'] not in seen_pmids
+            except AssertionError:
+                print({result['doi']}, ' already in set iteration ', i)
+
+            seen_pmids.add(result['pmid'])
+
+            articles.append(result)
+            i += 1
 
         article_df = pd.DataFrame(articles)
 
@@ -50,8 +82,8 @@ def parse_metadata(file_path: str) -> pd.DataFrame:
     return article_df
 
 def build_graphs(coci_dir: str,
-                         heading_to_dois: Dict[str, List[str]],
-                         include_first_degree: bool=False) -> Dict[str, nx.DiGraph]:
+                 heading_to_dois: Dict[str, List[str]],
+                 include_first_degree: bool=False) -> Dict[str, nx.DiGraph]:
     """
     Build the citation graphs for all MeSH headings provided
 
@@ -64,6 +96,7 @@ def build_graphs(coci_dir: str,
 
     Returns
     -------
+    heading_to_graph: A mapping between MeSH terms and their corresponding graphs
 
     """
     heading_to_graph = {heading: nx.DiGraph() for heading in heading_to_dois.keys()}
@@ -103,9 +136,11 @@ def parse_mesh_headings(metadata_dir: str,
     heading_to_dois: A dict mapping MeSH headings to the dois of publications that fall under them
     """
     metadata_files = glob.glob(f'{metadata_dir}/*.xz')
+
     headings = []
     heading_to_dois = {}
-    for metadata_path in metadata_files:
+    for metadata_path in tqdm(metadata_files):
+        print(metadata_path)
         heading = os.path.basename(metadata_path)
         heading = heading.split('.')[0]
         if filter_headings is not None and heading not in filter_headings:

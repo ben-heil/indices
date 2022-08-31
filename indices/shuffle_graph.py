@@ -18,7 +18,6 @@ if __name__ == '__main__':
     file_base = os.path.basename(graph_path)
     file_base = os.path.splitext(file_base)[0]
 
-
     with open(graph_path, 'rb') as in_file:
         original_network = pickle.load(in_file)
 
@@ -26,14 +25,14 @@ if __name__ == '__main__':
     for i in tqdm(range(args.n_graphs)):
         graph_copy = deepcopy(original_network)
         # Directed edge swap swaps three edges at a time
-        n_swap = n_edges // 3
+        n_swap = n_edges * 2
 
         shuffled_graph = nx.directed_edge_swap(graph_copy,
                                                nswap=n_swap,
                                                max_tries=100*n_edges,
                                                seed=42*i)
 
-        out_file_name = f'{file_base}_{i}.pkl'
+        out_file_name = f'{file_base}-{i}.pkl'
         out_file_path = os.path.join(args.out_dir, out_file_name)
 
         with open(out_file_path, 'wb') as out_path:

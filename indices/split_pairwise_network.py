@@ -5,8 +5,6 @@ import re
 
 import networkx as nx
 
-from utils import parse_mesh_headings
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -16,35 +14,39 @@ if __name__ == '__main__':
                         help='Files from download_article_metadata containing info on the '
                              'articles to add to the network',
                         default='data/pubmed/efetch')
+    parser.add_argument('--original_network_dir',
+                        help='The directory storing the base networks that the combined nets '
+                             'are built from',
+                        default='data/networks')
     parser.add_argument('--out_dir',
                         help='The location to save the resulting network to',
-                        default='data/networks')
+                        default='data/combined_networks')
     args = parser.parse_args()
-
-    heading_to_doi = parse_mesh_headings(args.metadata_dir)
 
     file = args.in_file
     file_base = os.path.basename(file)
     file_noext = os.path.splitext(file_base)[0]
     shuffle_number = None
-    shuffle_regex = '_[0-9]+.pkl'
+    shuffle_regex = '-[0-9]+.pkl'
     if re.search(shuffle_regex, file_base):
-        shuffle_number = file_noext.split('_')[-1]
-        headings = '_'.join(file_noext.split('_')[:-1])
+        headings, shuffle_number = file_noext.split('-')
         heading1, heading2 = headings.split('+')
     else:
         heading1, heading2 = file_noext.split('+')
 
-    heading1_dois = [doi for doi in heading_to_doi[heading1]
-                        if doi is not None and len(doi) > 0]
-    heading2_dois = [doi for doi in heading_to_doi[heading2]
-                        if doi is not None and len(doi) > 0]
+    heading1_network_file = os.path.join(args.original_network_dir, f'{heading1}.pkl')
+    heading2_network_file = os.path.join(args.original_network_dir, f'{heading2}.pkl')
+
+    with open(heading1_network_file, 'rb') as in_file:
+        heading1_network = pkl.load(in_file)
+    with open(heading2_network_file, 'rb') as in_file:
+        heading2_network = pkl.load(in_file)
 
     with open(file, 'rb') as file_handle:
         pairwise_network = pkl.load(file_handle)
 
-    heading1_network = pairwise_network.subgraph(heading1_dois).copy()
-    heading2_network = pairwise_network.subgraph(heading2_dois).copy()
+    heading1_network = pairwise_network.subgraph(heading1_network.nodes).copy()
+    heading2_network = pairwise_network.subgraph(heading2_network.nodes).copy()
 
     # Remove nodes with no edges (i.e. citations)
     heading1_network.remove_nodes_from(list(nx.isolates(heading1_network)))
@@ -54,8 +56,8 @@ if __name__ == '__main__':
         filename1 = f'{heading1}-{heading2}.pkl'
         filename2 = f'{heading2}-{heading1}.pkl'
     else:
-        filename1 = f'{heading1}-{heading2}_{shuffle_number}.pkl'
-        filename2 = f'{heading2}-{heading1}_{shuffle_number}.pkl'
+        filename1 = f'{heading1}-{heading2}-{shuffle_number}.pkl'
+        filename2 = f'{heading2}-{heading1}-{shuffle_number}.pkl'
 
     with open(os.path.join(args.out_dir, filename1), 'wb') as out_file:
         pkl.dump(heading1_network, out_file)
