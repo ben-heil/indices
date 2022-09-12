@@ -22,6 +22,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     for file in args.graph_files:
+        # Build path to save the results to
+        in_file_name = os.path.basename(file)
+        in_file_base = os.path.splitext(in_file_name)[0]
+        file_description = f'-{args.metric}.pkl'
+        out_file_path = os.path.join(args.out_dir, in_file_base + file_description)
+
+        if os.path.exists(out_file_path):
+            continue
+
         # Load graph
         with open(file, 'rb') as in_file:
             graph = pickle.load(in_file)

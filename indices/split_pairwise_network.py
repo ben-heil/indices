@@ -27,6 +27,19 @@ if __name__ == '__main__':
         file_base = os.path.basename(file)
         file_noext = os.path.splitext(file_base)[0]
         shuffle_number = None
+
+        if shuffle_number is None:
+            filename1 = f'{heading1}-{heading2}.pkl'
+            filename2 = f'{heading2}-{heading1}.pkl'
+        else:
+            filename1 = f'{heading1}-{heading2}-{shuffle_number}.pkl'
+            filename2 = f'{heading2}-{heading1}-{shuffle_number}.pkl'
+
+        file1_out = os.path.join(args.out_dir, filename1)
+        file2_out = os.path.join(args.out_dir, filename2)
+        if os.path.exists(file1_out) and os.path.exists(file2_out):
+            continue
+
         shuffle_regex = '-[0-9]+.pkl'
         if re.search(shuffle_regex, file_base):
             headings, shuffle_number = file_noext.split('-')
@@ -52,14 +65,7 @@ if __name__ == '__main__':
         heading1_network.remove_nodes_from(list(nx.isolates(heading1_network)))
         heading2_network.remove_nodes_from(list(nx.isolates(heading2_network)))
 
-        if shuffle_number is None:
-            filename1 = f'{heading1}-{heading2}.pkl'
-            filename2 = f'{heading2}-{heading1}.pkl'
-        else:
-            filename1 = f'{heading1}-{heading2}-{shuffle_number}.pkl'
-            filename2 = f'{heading2}-{heading1}-{shuffle_number}.pkl'
-
-        with open(os.path.join(args.out_dir, filename1), 'wb') as out_file:
+        with open(file1_out, 'wb') as out_file:
             pkl.dump(heading1_network, out_file)
-        with open(os.path.join(args.out_dir, filename2), 'wb') as out_file:
+        with open(file2_out, 'wb') as out_file:
             pkl.dump(heading2_network, out_file)
