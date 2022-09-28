@@ -15,7 +15,7 @@ dependencies:
   - requests=2.27.1
   - snakemake=7.9.0
   - statsmodels=0.13.2
-  - streamlit=1.12.0
+  - streamlit=1.13.0
   - tqdm=4.63.1
   - pip:
     - git+https://github.com/dhimmel/pubmedpy.git@129ea162214a00cebf561a8ddb011a2828a6ebbf
