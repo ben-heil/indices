@@ -26,7 +26,6 @@ if __name__ == '__main__':
         for i in tqdm(range(args.n_graphs)):
             out_file_name = f'{file_base}-{i}.pkl'
             out_file_path = os.path.join(args.out_dir, out_file_name)
-
             # Skip creating files that already exist
             if os.path.exists(out_file_path):
                 continue
@@ -40,10 +39,9 @@ if __name__ == '__main__':
                                                 max_tries=100*n_edges,
                                                 seed=42*i)
 
-            out_file_name = f'{file_base}-{i}.pkl'
-            out_file_path = os.path.join(args.out_dir, out_file_name)
 
             with open(out_file_path, 'wb') as out_path:
                 pickle.dump(shuffled_graph, out_path)
+
 
 
