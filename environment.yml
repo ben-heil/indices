@@ -1,4 +1,4 @@
-name: indices 
+name: indices
 channels:
   - conda-forge
   - bioconda
@@ -9,11 +9,13 @@ dependencies:
   - networkx=2.5
   - pandas=1.4.1
   - pip=22.0.4
+  - plotly=5.10.0
   - python=3.10.4
   - ratelimit=2.2.1
   - requests=2.27.1
   - snakemake=7.9.0
   - statsmodels=0.13.2
+  - streamlit=1.12.0
   - tqdm=4.63.1
   - pip:
     - git+https://github.com/dhimmel/pubmedpy.git@129ea162214a00cebf561a8ddb011a2828a6ebbf
