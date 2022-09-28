@@ -1,11 +1,13 @@
 import collections
+from functools import lru_cache
 import glob
 import os
-import pickle
-from typing import List, Dict, Union
+import pickle as pkl
+from typing import List, Dict, Union, Tuple
 
 import lxml.etree
 import networkx as nx
+import numpy as np
 import pandas as pd
 from pubmedpy.efetch import extract_identifiers
 from pubmedpy.xml import iter_extract_elems
@@ -52,7 +54,7 @@ def parse_metadata(file_path: str) -> pd.DataFrame:
     # For speed, load the pickled version if it's available
     if os.path.exists(pickle_path):
         with open(pickle_path, 'rb') as in_file:
-            article_df = pickle.load(in_file)
+            article_df = pkl.load(in_file)
     else:
         articles = []
         # generator of XML PubmedArticle elements
@@ -77,7 +79,7 @@ def parse_metadata(file_path: str) -> pd.DataFrame:
         article_df = pd.DataFrame(articles)
 
         with open(pickle_path, 'wb') as out_file:
-            pickle.dump(article_df, out_file)
+            pkl.dump(article_df, out_file)
 
     return article_df
 
@@ -152,3 +154,147 @@ def parse_mesh_headings(metadata_dir: str,
         heading_to_dois[heading] = dois
 
     return heading_to_dois
+
+
+def calculate_percentiles(true_vals, doi_to_shuffled_metrics):
+    dois, pageranks = [], []
+    for doi, pagerank in true_vals.items():
+        if pagerank is not None:
+            dois.append(doi)
+            pageranks.append(pagerank)
+
+    percentiles = []
+    for doi in dois:
+        if doi not in doi_to_shuffled_metrics:
+            percentiles.append(None)
+            continue
+
+        shuffled_metrics = doi_to_shuffled_metrics[doi]
+        # If the node is unshuffleable for some reason, its percentile isn't meaningful
+        if len(set(shuffled_metrics)) == 1:
+            percentiles.append(None)
+            continue
+        true_val = true_vals[doi]
+
+        percentile = np.searchsorted(shuffled_metrics, true_val) / 100
+        percentiles.append(percentile)
+
+    result_df = pd.DataFrame({'doi': dois, 'pagerank': pageranks, 'percentile': percentiles})
+    return result_df
+
+
+@lru_cache(2)
+def load_single_heading(heading_str):
+    heading_shuffled = glob.glob(f'output/shuffle_results/{heading_str}*-pagerank.pkl')
+
+    doi_to_shuffled_metrics = {}
+
+    for path in heading_shuffled:
+        with open(path, 'rb') as in_file:
+            result = pkl.load(in_file)
+            for doi, value in result.items():
+                if doi in doi_to_shuffled_metrics:
+                    doi_to_shuffled_metrics[doi].append(value)
+                else:
+                    doi_to_shuffled_metrics[doi] = [value]
+    for doi, vals in doi_to_shuffled_metrics.items():
+        doi_to_shuffled_metrics[doi] = sorted(vals)
+
+    with open(f'output/{heading_str}-pagerank.pkl', 'rb') as in_file:
+        true_vals = pkl.load(in_file)
+
+    heading_df = calculate_percentiles(true_vals, doi_to_shuffled_metrics)
+    return heading_df
+
+
+def load_pair_headings(heading1, heading2):
+    heading1_df = load_single_heading(f'{heading1}-{heading2}')
+    heading2_df = load_single_heading(f'{heading2}-{heading1}')
+
+    merged_df = heading1_df.merge(heading2_df, on='doi')
+    merged_df = merged_df.rename({'pagerank_x': f'{heading1}_pagerank', 'pagerank_y': f'{heading2}_pagerank',
+                                  'percentile_x': f'{heading1}_percentile', 'percentile_y': f'{heading2}_percentile'},
+                                 axis='columns')
+    merged_df[f'{heading1}-{heading2}'] = merged_df[f'{heading1}_percentile'] - merged_df[f'{heading2}_percentile']
+    merged_df[f'{heading2}-{heading1}'] = merged_df[f'{heading2}_percentile'] - merged_df[f'{heading1}_percentile']
+
+    metadata_df = parse_metadata(f'data/pubmed/efetch/{heading1}.xml.xz')
+    full_df = merged_df.merge(metadata_df, on='doi')
+
+    return full_df
+
+
+def load_text(file_path: str) -> str:
+    """A convenience function for reading in the markdown files used for the site's text"""
+    with open(file_path) as in_file:
+        return in_file.read()
+
+
+def extract_heading_name(file_path: str) -> Tuple[str, str]:
+    """
+    Parse heading names from a file path
+    """
+    file_base = os.path.basename(file_path)
+    both_headings = os.path.splitext(file_base)[0]
+    heading1, heading2 = both_headings.split('-')
+
+    return heading1, heading2
+
+def get_heading_names() -> List[str]:
+    """
+    Retrieve the names of all MeSH terms we have dataframes for
+    """
+    result_files = glob.glob('viz_dataframes/percentiles/*.pkl')
+
+    headings = set()
+    for file in result_files:
+        heading1, heading2 = extract_heading_name(file)
+        headings.add(heading1)
+        headings.add(heading2)
+
+    return list(headings)
+
+def get_pair_names(heading:str) -> List[str]:
+    """
+    Get the names of all headings that have been compared against the given heading
+    """
+    result_files = glob.glob(f'viz_dataframes/percentiles/*{heading}*.pkl')
+
+    pair_headings = set()
+
+    for file in result_files:
+        heading1, heading2 = extract_heading_name(file)
+        if heading1 == heading:
+            pair_headings.add(heading2)
+        else:
+            pair_headings.add(heading1)
+    return list(pair_headings)
+
+def load_percentile_data(heading1:str , heading2: str) -> pd.DataFrame:
+    """
+    Load the dataframe containing papers' percentiles and pageranks
+    """
+    path = f'viz_dataframes/percentiles/{heading1}-{heading2}.pkl'
+    if os.path.exists(path):
+        with open(path, 'rb') as in_file:
+            result_df = pkl.load(in_file)
+    else:
+        path = f'viz_dataframes/percentiles/{heading2}-{heading1}.pkl'
+        with open(path, 'rb') as in_file:
+            result_df = pkl.load(in_file)
+    return result_df
+
+
+def load_journal_data(heading1: str, heading2: str) -> pd.DataFrame:
+    """
+    Load the dataframe containing information about journals across fields
+    """
+    path = f'viz_dataframes/journals/{heading1}-{heading2}.pkl'
+    if os.path.exists(path):
+        with open(path, 'rb') as in_file:
+            result_df = pkl.load(in_file)
+    else:
+        path = f'viz_dataframes/journals/{heading2}-{heading1}.pkl'
+        with open(path, 'rb') as in_file:
+            result_df = pkl.load(in_file)
+    return result_df
