@@ -28,6 +28,13 @@ if __name__ == '__main__':
         file_noext = os.path.splitext(file_base)[0]
         shuffle_number = None
 
+        shuffle_regex = '-[0-9]+.pkl'
+        if re.search(shuffle_regex, file_base):
+            headings, shuffle_number = file_noext.split('-')
+            heading1, heading2 = headings.split('+')
+        else:
+            heading1, heading2 = file_noext.split('+')
+
         if shuffle_number is None:
             filename1 = f'{heading1}-{heading2}.pkl'
             filename2 = f'{heading2}-{heading1}.pkl'
@@ -39,13 +46,6 @@ if __name__ == '__main__':
         file2_out = os.path.join(args.out_dir, filename2)
         if os.path.exists(file1_out) and os.path.exists(file2_out):
             continue
-
-        shuffle_regex = '-[0-9]+.pkl'
-        if re.search(shuffle_regex, file_base):
-            headings, shuffle_number = file_noext.split('-')
-            heading1, heading2 = headings.split('+')
-        else:
-            heading1, heading2 = file_noext.split('+')
 
         heading1_network_file = os.path.join(args.original_network_dir, f'{heading1}.pkl')
         heading2_network_file = os.path.join(args.original_network_dir, f'{heading2}.pkl')
