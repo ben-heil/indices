@@ -1,13 +1,13 @@
 import plotly.express as px
 import streamlit as st
 
-from src.utils import get_heading_names, load_text, get_pair_names, load_percentile_data, load_journal_data
+from indices.utils import get_heading_names, load_text, get_pair_names, load_percentile_data, load_journal_data
 
 # TODO decide whether to move the web app into the original repo or leave it here
 
 if __name__ == '__main__':
     # Header
-    header_text = load_text('header_text.md')
+    header_text = load_text('app_files/header_text.md')
     st.write(header_text)
 
     heading_names = get_heading_names()
