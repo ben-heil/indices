@@ -11,7 +11,6 @@ eval "$(conda shell.bash hook)"
 
 conda activate indices
 
-# TODO conda env
 if [ "$#" -eq 0 ] 
 then
     echo "At least one argument required, $# provided"
