@@ -147,10 +147,7 @@ if __name__ == '__main__':
                         continue
                     depth = len(id.split('.'))
 
-                    if depth in descriptors_by_depth:
-                        descriptors_by_depth[depth].append((heading, id))
-                    else:
-                        descriptors_by_depth[depth] = [(heading, id)]
+                    descriptors_by_depth[depth].append((heading, id))
 
                 heading = None
                 ids = []
