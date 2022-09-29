@@ -4,6 +4,7 @@ Condense the results of the pipeline into a form useable by the web app
 This script was used in the cluster environment to condense the results
 into something more easily stored/moved.
 """
+import argparse
 import glob
 import os
 import pickle as pkl
@@ -133,34 +134,41 @@ def load_pair_headings(heading1, heading2):
 
     return full_df
 
-for path1, path2 in tqdm(list(combinations(glob.glob(f'{DIR_ROOT}/data/networks/*.pkl'), 2))):
-    path1_file = os.path.basename(path1)
-    heading1 = os.path.splitext(path1_file)[0]
-    path2_file = os.path.basename(path2)
-    heading2 = os.path.splitext(path2_file)[0]
-    print(heading1, heading2)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--journal_size_cutoff', type=int, default=25,
+                        help='The number of papers in a journal for it to be included'
+                        )
+    args = parser.parse_args()
 
-    try:
-        percentile_out_path = f'{DIR_ROOT}/viz_dataframes/percentiles/{heading1}-{heading2}.pkl'
-        journal_out_path = f'{DIR_ROOT}/viz_dataframes/journals/{heading1}-{heading2}.pkl'
+    for path1, path2 in tqdm(list(combinations(glob.glob(f'{DIR_ROOT}/data/networks/*.pkl'), 2))):
+        path1_file = os.path.basename(path1)
+        heading1 = os.path.splitext(path1_file)[0]
+        path2_file = os.path.basename(path2)
+        heading2 = os.path.splitext(path2_file)[0]
+        print(heading1, heading2)
 
-        if os.path.exists(percentile_out_path) and os.path.exists(journal_out_path):
+        try:
+            percentile_out_path = f'{DIR_ROOT}/viz_dataframes/percentiles/{heading1}-{heading2}.pkl'
+            journal_out_path = f'{DIR_ROOT}/viz_dataframes/journals/{heading1}-{heading2}.pkl'
+
+            if os.path.exists(percentile_out_path) and os.path.exists(journal_out_path):
+                continue
+
+            df = load_pair_headings(heading1, heading2)
+            # Store per-paper results
+            out_path = f'{DIR_ROOT}/viz_dataframes/percentiles/{heading1}-{heading2}.pkl'
+            with open(out_path, 'wb') as out_file:
+                pkl.dump(df, out_file)
+
+            journal_groups = df.groupby('journal')
+            medians = journal_groups.median()
+            sizes = journal_groups.size()
+            medians['journal_title'] = medians.index
+            # Store journal-level results
+            out_path = f'{DIR_ROOT}/viz_dataframes/journals/{heading1}-{heading2}.pkl'
+            with open(out_path, 'wb') as out_file:
+                pkl.dump(medians[sizes > args.journal_size_cutoff], out_file)
+        except FileNotFoundError:
+            print('Results not found')
             continue
-
-        df = load_pair_headings(heading1, heading2)
-        # Store per-paper results
-        out_path = f'{DIR_ROOT}/viz_dataframes/percentiles/{heading1}-{heading2}.pkl'
-        with open(out_path, 'wb') as out_file:
-            pkl.dump(df, out_file)
-
-        journal_groups = df.groupby('journal')
-        medians = journal_groups.median()
-        sizes = journal_groups.size()
-        medians['journal_title'] = medians.index
-        # Store journal-level results
-        out_path = f'{DIR_ROOT}/viz_dataframes/journals/{heading1}-{heading2}.pkl'
-        with open(out_path, 'wb') as out_file:
-            pkl.dump(medians[sizes > 25], out_file)
-    except FileNotFoundError:
-        print('Results not found')
-        continue
