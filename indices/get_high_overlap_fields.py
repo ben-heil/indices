@@ -4,12 +4,14 @@ import os
 import pickle as pkl
 import shutil
 
-OVERLAP_THRESHOLD = 1000
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('in_dir', help='The pagerank results to be filtered')
     parser.add_argument('out_dir', help='The location to store results with high overlap')
+    parser.add_argument('overlap_threshold',
+                        help='The minimum number of shared papers to include a field pair',
+                        default=1000,
+                        type=int)
     args = parser.parse_args()
 
     i = 0
@@ -25,4 +27,4 @@ if __name__ == '__main__':
             i += 1
             shutil.copyfile(path, os.path.join(args.out_dir, filename))
 
-    print(f'{i} heading pairs have > {OVERLAP_THRESHOLD} shared papers')
+    print(f'{i} heading pairs have > {args.overlap_threshold} shared papers')
