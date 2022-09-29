@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('graph_paths', help='The path to the graph to shuffle', nargs='+')
+    parser.add_argument('graph_paths', help='The paths to the graphs to shuffle', nargs='+')
     parser.add_argument('--out_dir', help='The directory to store shuffled graphs in', default='data/shuffled_combined_networks')
     parser.add_argument('--n_graphs', help='The number of shuffled graphs to create', default=100)
     args = parser.parse_args()
