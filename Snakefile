@@ -101,7 +101,7 @@ rule shuffle_combined_networks:
         ["data/shuffled_combined_networks/{combined_heading}-"+ str(i) + ".pkl" for i in range(100)]
 
     shell:
-        "python indices/shuffle_graph.py {input} data/shuffled_combined_networks "
+        "python indices/shuffle_graph.py {input} --out_dir data/shuffled_combined_networks "
 
 rule split_combined_shuffled_networks:
     input:

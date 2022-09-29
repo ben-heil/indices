@@ -1,0 +1,1 @@
+snakemake -s cluster_snakefile -j 32 --latency-wait 15 --use-conda --conda-frontend mamba --cluster "sbatch -p shas -t 8:00:00 --cpus-per-task 1 --mem 32G --chdir '/projects/benheil@xsede.org' --output /scratch/summit/benheil\@xsede.org/logs/indices-%j.out --error /scratch/summit/benheil\@xsede.org/logs/indices-%j.err "
