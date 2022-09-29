@@ -11,7 +11,7 @@ import algos
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('graph_files',
-                        help='The file containing the pickled graph for a MeSH heading',
+                        help='The files containing the pickled graphs for a MeSH heading',
                         nargs='+')
     parser.add_argument('--metric',
                         help='The metric to calculate for the graph',
