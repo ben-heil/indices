@@ -23,7 +23,7 @@ if __name__ == '__main__':
         except FileNotFoundError:
             continue
 
-        if len(df) > OVERLAP_THRESHOLD:
+        if len(df) > args.overlap_threshold:
             i += 1
             shutil.copyfile(path, os.path.join(args.out_dir, filename))
 
