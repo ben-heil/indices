@@ -3,7 +3,7 @@ from functools import lru_cache
 import glob
 import os
 import pickle as pkl
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Union, Tuple, Set
 
 import lxml.etree
 import networkx as nx
@@ -184,8 +184,8 @@ def calculate_percentiles(true_vals, doi_to_shuffled_metrics):
 
 
 @lru_cache(2)
-def load_single_heading(heading_str):
-    heading_shuffled = glob.glob(f'output/shuffle_results/{heading_str}*-pagerank.pkl')
+def load_single_heading(heading_str, base_dir='output'):
+    heading_shuffled = glob.glob(f'{base_dir}/shuffle_results/{heading_str}*-pagerank.pkl')
 
     doi_to_shuffled_metrics = {}
 
@@ -200,16 +200,16 @@ def load_single_heading(heading_str):
     for doi, vals in doi_to_shuffled_metrics.items():
         doi_to_shuffled_metrics[doi] = sorted(vals)
 
-    with open(f'output/{heading_str}-pagerank.pkl', 'rb') as in_file:
+    with open(f'{base_dir}/{heading_str}-pagerank.pkl', 'rb') as in_file:
         true_vals = pkl.load(in_file)
 
     heading_df = calculate_percentiles(true_vals, doi_to_shuffled_metrics)
     return heading_df
 
 
-def load_pair_headings(heading1, heading2):
-    heading1_df = load_single_heading(f'{heading1}-{heading2}')
-    heading2_df = load_single_heading(f'{heading2}-{heading1}')
+def load_pair_headings(heading1, heading2, base_dir='output'):
+    heading1_df = load_single_heading(f'{heading1}-{heading2}', base_dir)
+    heading2_df = load_single_heading(f'{heading2}-{heading1}', base_dir)
 
     merged_df = heading1_df.merge(heading2_df, on='doi')
     merged_df = merged_df.rename({'pagerank_x': f'{heading1}_pagerank', 'pagerank_y': f'{heading2}_pagerank',
@@ -240,11 +240,11 @@ def extract_heading_name(file_path: str) -> Tuple[str, str]:
 
     return heading1, heading2
 
-def get_heading_names() -> List[str]:
+def get_heading_names(base_dir='viz_dataframes') -> List[str]:
     """
     Retrieve the names of all MeSH terms we have dataframes for
     """
-    result_files = glob.glob('viz_dataframes/percentiles/*.pkl')
+    result_files = glob.glob(f'{base_dir}/percentiles/*.pkl')
 
     headings = set()
     for file in result_files:
@@ -254,11 +254,18 @@ def get_heading_names() -> List[str]:
 
     return list(headings)
 
-def get_pair_names(heading:str) -> List[str]:
+def get_journal_names(journal_data: pd.DataFrame) -> List[str]:
+    """
+    Get the names of the commonly used journals for the current pair
+    """
+    return list(journal_data['journal_title'])
+
+
+def get_pair_names(heading:str, base_dir='viz_dataframes') -> List[str]:
     """
     Get the names of all headings that have been compared against the given heading
     """
-    result_files = glob.glob(f'viz_dataframes/percentiles/*{heading}*.pkl')
+    result_files = glob.glob(f'{base_dir}/percentiles/*{heading}*.pkl')
 
     pair_headings = set()
 
@@ -270,31 +277,31 @@ def get_pair_names(heading:str) -> List[str]:
             pair_headings.add(heading1)
     return list(pair_headings)
 
-def load_percentile_data(heading1:str , heading2: str) -> pd.DataFrame:
+def load_percentile_data(heading1:str , heading2: str, base_dir='viz_dataframes') -> pd.DataFrame:
     """
     Load the dataframe containing papers' percentiles and pageranks
     """
-    path = f'viz_dataframes/percentiles/{heading1}-{heading2}.pkl'
+    path = f'{base_dir}/percentiles/{heading1}-{heading2}.pkl'
     if os.path.exists(path):
         with open(path, 'rb') as in_file:
             result_df = pkl.load(in_file)
     else:
-        path = f'viz_dataframes/percentiles/{heading2}-{heading1}.pkl'
+        path = f'{base_dir}/percentiles/{heading2}-{heading1}.pkl'
         with open(path, 'rb') as in_file:
             result_df = pkl.load(in_file)
     return result_df
 
 
-def load_journal_data(heading1: str, heading2: str) -> pd.DataFrame:
+def load_journal_data(heading1: str, heading2: str, base_dir='viz_dataframes') -> pd.DataFrame:
     """
     Load the dataframe containing information about journals across fields
     """
-    path = f'viz_dataframes/journals/{heading1}-{heading2}.pkl'
+    path = f'{base_dir}/journals/{heading1}-{heading2}.pkl'
     if os.path.exists(path):
         with open(path, 'rb') as in_file:
             result_df = pkl.load(in_file)
     else:
-        path = f'viz_dataframes/journals/{heading2}-{heading1}.pkl'
+        path = f'{base_dir}/journals/{heading2}-{heading1}.pkl'
         with open(path, 'rb') as in_file:
             result_df = pkl.load(in_file)
     return result_df
