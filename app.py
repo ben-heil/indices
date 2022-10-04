@@ -29,26 +29,27 @@ if __name__ == '__main__':
     journal_names.insert(0, ALL_JOURNAL_STR)
     journal = st.selectbox('Journal To Highlight', journal_names)
 
-    if journal != ALL_JOURNAL_STR:
-        percentile_data = percentile_data.where(percentile_data['journal'] == journal)
+    articles = len(percentile_data)
 
+    if journal != ALL_JOURNAL_STR:
+        opacities = np.where(percentile_data['journal'] == journal, 1, 100 / articles)
+    else:
+        opacities = 1
 
     color_scale =[(0, "red"), (0.5, "#d4d4d4"), (1, "blue")]
 
     fig = px.scatter(percentile_data, x=f'{heading1}_pagerank', y=f'{heading2}_pagerank', log_x=True, log_y=True,
-                 opacity=1, color=f'{heading1}-{heading2}', hover_data=['doi', 'title'],
+                 opacity=opacities, color=f'{heading1}-{heading2}', hover_data=['doi', 'title'],
                  title=f'Relative importance of papers in {heading1} and {heading2}',
                  color_continuous_scale=color_scale,
                  range_color=(-1,1))
 
     st.plotly_chart(fig)
 
-
-
     fig = px.scatter(journal_data, x=f'{heading1}_pagerank', y=f'{heading2}_pagerank',
                      log_x=True, log_y=True, opacity=1, color=f'{heading1}-{heading2}',
                      hover_data=['journal_title'],
-                     title=f'Relative importance of papers in {heading1} and {heading2}',
+                     title=f'Common journals in {heading1} and {heading2}',
                      color_continuous_scale=color_scale,
                      range_color=(-1,1))
     st.plotly_chart(fig)
