@@ -87,11 +87,9 @@ def calculate_percentiles(true_vals, doi_to_shuffled_metrics):
         # If the node is unshuffleable for some reason, its percentile isn't meaningful
         if len(set(shuffled_metrics)) <= 1:
             percentiles.append(None)
-            counts.append(len(shuffled_metrics)
+            counts.append(len(shuffled_metrics))
             continue
         true_val = true_vals[doi]
-
-        assert
 
         percentile = np.searchsorted(shuffled_metrics, true_val) / len(shuffled_metrics)
         percentiles.append(percentile)
