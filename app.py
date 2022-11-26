@@ -13,13 +13,13 @@ if __name__ == '__main__':
 
     heading_names = utils.get_heading_names()
     heading_names.sort()
-    heading1 = st.selectbox('Field of interest', heading_names)
+    heading1 = st.selectbox('Field 1', heading_names)
 
     # Names of headings who have dfs paired with selected heading
     pair_names = utils.get_pair_names(heading1)
     pair_names.sort()
 
-    heading2 = st.selectbox('Heading 2', pair_names)
+    heading2 = st.selectbox('Field 2', pair_names)
 
     percentile_data = utils.load_percentile_data(heading1, heading2)
     journal_data = utils.load_journal_data(heading1, heading2)
@@ -47,9 +47,8 @@ if __name__ == '__main__':
     st.plotly_chart(fig)
 
     fig = px.scatter(journal_data, x=f'{heading1}_pagerank', y=f'{heading2}_pagerank',
-                     log_x=True, log_y=True, opacity=1, color=f'{heading1}-{heading2}',
+                     log_x=True, log_y=True, opacity=1,
                      hover_data=['journal_title'],
                      title=f'Common journals in {heading1} and {heading2}',
-                     color_continuous_scale=color_scale,
-                     range_color=(-1,1))
+                     color_discrete_sequence=['black'])
     st.plotly_chart(fig)
