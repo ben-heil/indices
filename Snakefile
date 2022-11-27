@@ -1,15 +1,5 @@
 import itertools
 
-# HEADINGS = ["botany", "developmental_biology", "genetics","microbiology", "ecology",
-#             # Informatics subheadings
-#             "cheminformatics", "computational_biology", "consumer_health_informatics","medical_informatics",
-#             # Algorithms subheadings
-#             "artificial_intelligence", "latent_class_analysis",
-#             ]
-
-#HEADINGS = ["artificial_intelligence", "computational_biology", "ecology", "genetics",
-#            "medical_informatics", "microbiology"]
-
 HEADINGS = ["Anatomy", "Histocytochemistry", "Immunochemistry", "Molecular Biology",
             "Proteomics", "Metabolomics", "Human Genetics", "Genetics Population",
             "Genetic Research", "Food Microbiology", "Soil Microbiology", "Water Microbiology",
@@ -25,10 +15,7 @@ HEADINGS = ["Anatomy", "Histocytochemistry", "Immunochemistry", "Molecular Biolo
             "Geography", "Paleontology"]
 
 
-# TODO use pickle file to read in headings
 HEADINGS = [h.lower().replace(' ', '_') for h in HEADINGS]
-
-#HEADINGS = ["artificial_intelligence", "computational_biology"]
 
 COCI_DIR = '/mnt/SlowData/coci'
 
