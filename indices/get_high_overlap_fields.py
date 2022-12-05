@@ -31,7 +31,7 @@ if __name__ == '__main__':
         file_noext = os.path.splitext(file_name)[0]
         heading1, heading2 = file_noext.split('-')
 
-        # Remove the
+        # Remove the papers that get lost in the shuffle too often
         filter_condition = ((df[f'{heading1}_count'] >= args.missingness_threshold) &
                            (df[f'{heading2}_count'] >= args.missingness_threshold))
 
