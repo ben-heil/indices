@@ -7,8 +7,6 @@
 
 #sbatch -W pairwise_coordinator.sh
 sbatch -W shuffle_coordinator.sh
-sbatch -W shuffle_coordinator.sh
-sbatch -W shuffle_coordinator.sh
 sbatch -W split_combined_coordinator.sh
 sbatch -W split_combined_shuffled_coordinator.sh
 sbatch -W pagerank_coordinator.sh

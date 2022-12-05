@@ -8,9 +8,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('in_dir', help='The pagerank results to be filtered')
     parser.add_argument('out_dir', help='The location to store results with high overlap')
-    parser.add_argument('overlap_threshold',
+    parser.add_argument('--overlap_threshold',
                         help='The minimum number of shared papers to include a field pair',
                         default=1000,
+                        type=int)
+    parser.add_argument('--missingness_threshold',
+                        help='The minimum amount of shuffles present for a paper to keep it',
+                        default=95,
                         type=int)
     args = parser.parse_args()
 
@@ -22,6 +26,16 @@ if __name__ == '__main__':
                 df = pkl.load(in_file)
         except FileNotFoundError:
             continue
+
+        file_name = os.path.basename(path)
+        file_noext = os.path.splitext(file_name)[0]
+        heading1, heading2 = file_noext.split('-')
+
+        # Remove the papers that get lost in the shuffle too often
+        filter_condition = ((df[f'{heading1}_count'] >= args.missingness_threshold) &
+                           (df[f'{heading2}_count'] >= args.missingness_threshold))
+
+        df = df[filter_condition]
 
         if len(df) > args.overlap_threshold:
             i += 1

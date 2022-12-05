@@ -2,3 +2,4 @@
 *pycache*
 *.egg-info*
 ncbi_api_key.txt
+figures/

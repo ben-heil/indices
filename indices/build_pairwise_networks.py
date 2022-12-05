@@ -54,6 +54,12 @@ if __name__ == '__main__':
         second_dois = heading_to_dois[heading2]
         combined_dois = first_dois.union(second_dois)
 
+        out_file_path = os.path.join(args.out_dir, f'{heading1}+{heading2}' + '.pkl')
+
+        # Don't need to track heading pairs that we've already built networks for
+        if os.path.exists(out_file_path):
+            continue
+
         paired_headings[f'{heading1}+{heading2}'] = combined_dois
 
     # This is a 20GB object so let's go ahead and deallocate the memory

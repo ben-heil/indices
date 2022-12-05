@@ -70,7 +70,7 @@ def parse_metadata(file_path: str) -> pd.DataFrame:
     return article_df
 
 def calculate_percentiles(true_vals, doi_to_shuffled_metrics):
-    dois, pageranks = [], []
+    dois, pageranks, counts = [], [], []
     for doi, pagerank in true_vals.items():
         if pagerank is not None:
             dois.append(doi)
@@ -80,19 +80,23 @@ def calculate_percentiles(true_vals, doi_to_shuffled_metrics):
     for doi in dois:
         if doi not in doi_to_shuffled_metrics:
             percentiles.append(None)
+            counts.append(None)
             continue
 
         shuffled_metrics = doi_to_shuffled_metrics[doi]
         # If the node is unshuffleable for some reason, its percentile isn't meaningful
-        if len(set(shuffled_metrics)) == 1:
+        if len(set(shuffled_metrics)) <= 1:
             percentiles.append(None)
+            counts.append(len(shuffled_metrics))
             continue
         true_val = true_vals[doi]
 
-        percentile = np.searchsorted(shuffled_metrics, true_val) / 100
+        percentile = np.searchsorted(shuffled_metrics, true_val) / len(shuffled_metrics)
         percentiles.append(percentile)
+        counts.append(len(shuffled_metrics))
 
-    result_df = pd.DataFrame({'doi': dois, 'pagerank': pageranks, 'percentile': percentiles})
+    result_df = pd.DataFrame({'doi': dois, 'pagerank': pageranks, 'percentile': percentiles,
+                              'count': counts})
     return result_df
 
 @lru_cache(2)
@@ -123,9 +127,13 @@ def load_pair_headings(heading1, heading2):
     heading2_df = load_single_heading(f'{heading2}-{heading1}')
 
     merged_df = heading1_df.merge(heading2_df, on='doi')
-    merged_df = merged_df.rename({'pagerank_x': f'{heading1}_pagerank', 'pagerank_y': f'{heading2}_pagerank',
-                                  'percentile_x': f'{heading1}_percentile', 'percentile_y': f'{heading2}_percentile'},
-                                 axis='columns')
+    merged_df = merged_df.rename({'pagerank_x': f'{heading1}_pagerank',
+                                  'pagerank_y': f'{heading2}_pagerank',
+                                  'percentile_x': f'{heading1}_percentile',
+                                  'percentile_y': f'{heading2}_percentile',
+                                  'count_x': f'{heading1}_count',
+                                  'count_y': f'{heading2}_count',},
+                                  axis='columns')
     merged_df[f'{heading1}-{heading2}'] = merged_df[f'{heading1}_percentile'] - merged_df[f'{heading2}_percentile']
     merged_df[f'{heading2}-{heading1}'] = merged_df[f'{heading2}_percentile'] - merged_df[f'{heading1}_percentile']
 
