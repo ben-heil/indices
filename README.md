@@ -2,7 +2,7 @@
 This repo contains code and data to reproduce the results of the manuscript "The field-dependent nature of PageRank values in citation networks".
 In short, we devise a method to compare PageRanks for papers shared between fields and determine that there is field-specific interest in some papers.
 
-![field comparison figure](https://raw.githubusercontent.com/greenelab/indices/main/figures/percentile_figure.svg)
+![field comparison figure](https://raw.githubusercontent.com/greenelab/indices/main/figures/percentile_figure.png)
 
 ## Installation
 The Python dependencies for this project are managed via [Conda](https://docs.conda.io/en/latest/miniconda.html).
