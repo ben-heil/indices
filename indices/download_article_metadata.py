@@ -208,8 +208,6 @@ if __name__ == '__main__':
         with open(args.key_file, 'r') as in_file:
             api_key = in_file.readline().strip()
 
-     # TODO read heaidngs from a file
-
     # I could be a little more memory eficient by creating a partial function or something,
     # but this is way more readable and I'm only using ~1kB of mem to do this
     api_keys = [api_key] * len(HEADINGS)
