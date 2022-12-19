@@ -21,6 +21,7 @@ def cites_downstream(in_doi: str, graph: DiGraph, out_dois: set) -> bool:
             return True
     return False
 
+
 def count_papers_citing(dois: set, graph: DiGraph) -> int:
     """
     Get the papers citing the given set of dois.
@@ -61,7 +62,8 @@ def all_nodes_disruption_index(graph) -> dict:
         node_to_metric[node] = disruption_index(node, graph)
     return node_to_metric
 
-def disruption_index(doi: str, graph: DiGraph) ->  float:
+
+def disruption_index(doi: str, graph: DiGraph) -> float:
     """
     Calculates the disruption index from Wu, Wang, and Evans.
 
