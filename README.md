@@ -18,6 +18,8 @@ conda activate indices
 ## Running the pipeline
 The pipeline we used to run our analyses is best suited for running in a cluster environment, because it generates multiple terabytes of intermediate outputs and runs tens of thousands of easily paralellizable processes.
 For an example of how to run the analysis portion of the pipeline on a Slurm cluster, see the `cluster_pipeline/` directory.
+There is also a Snakemake file in the main directory titled `Snakefile`.
+We don't recommend using it as it doesn't contain all the steps of the pipeline (and it takes half an hour to build the DAG), but we left it in to give usage examples for some of the scripts.
 
 The order in which to run the scripts, and a brief description of what the scripts do, can be found below:
 
