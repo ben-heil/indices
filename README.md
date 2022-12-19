@@ -1,4 +1,6 @@
 # PageRank by Field
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7458535.svg)](https://doi.org/10.5281/zenodo.7458535)
+
 This repo contains code and data to reproduce the results of the manuscript "The field-dependent nature of PageRank values in citation networks".
 In short, we devise a method to compare PageRanks for papers shared between fields and determine that there is field-specific interest in some papers.
 
@@ -32,3 +34,6 @@ The order in which to run the scripts, and a brief description of what the scrip
 |src/run_metric_on_graph.py|Calculate the PageRanks for articles within the resulting networks (run this for both shuffled and true split networks)|
 |src/store_percentile_dataframes.py|Condense the results into a format more easily stored on a desktop computer and compatible with the visualization notebook|
 |notebooks/figures.ipynb|Visualize results and generate figures for publication|
+
+## Results
+The dataframes produced by our analysis pipeline can be downloaded from https://zenodo.org/record/7458535 (DOI 10.5281/zenodo.7458535)
