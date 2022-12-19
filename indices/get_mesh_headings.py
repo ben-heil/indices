@@ -13,9 +13,10 @@ import tqdm
 from ratelimit import limits, sleep_and_retry
 
 ARTICLE_THRESHOLD = 10000
-CACHE_FILE = 'heading.tmp'
+CACHE_FILE = "heading.tmp"
 
-class Node():
+
+class Node:
     def __init__(self, heading: str, id: str):
         self.heading = heading
         self.id = id
@@ -29,23 +30,25 @@ def persist_to_file(file_name):
     # https://stackoverflow.com/questions/16463582/memoize-to-disk-python-persistent-memoization
     def decorator(original_func):
         try:
-            cache = pickle.load(open(file_name, 'rb'))
+            cache = pickle.load(open(file_name, "rb"))
         except (IOError, ValueError):
             cache = {}
 
         def new_func(param):
             if param not in cache:
                 cache[param] = original_func(param)
-                pickle.dump(cache, open(file_name, 'wb'))
+                pickle.dump(cache, open(file_name, "wb"))
             return cache[param]
 
         return new_func
+
     return decorator
 
 
 def make_path_safe(path: str) -> str:
     # https://stackoverflow.com/questions/7406102/create-sane-safe-filename-from-any-unsafe-string
-    return "".join([c for c in path if c.isalpha() or c.isdigit() or c==' ']).rstrip()
+    return "".join([c for c in path if c.isalpha() or c.isdigit() or c == " "]).rstrip()
+
 
 @sleep_and_retry
 @limits(calls=2, period=1)
@@ -67,8 +70,8 @@ def get_heading_article_count(heading: str) -> pd.DataFrame:
     https://github.com/greenelab/iscb-diversity/blob/master/02.process-pubmed.ipynb
     """
     payload = {
-        'db': 'pubmed',
-        'term': f'"journal article"[pt] AND "{heading}"[MeSH Terms] AND English[Language]',
+        "db": "pubmed",
+        "term": f'"journal article"[pt] AND "{heading}"[MeSH Terms] AND English[Language]',
     }
 
     retry_interval = 1
@@ -85,18 +88,19 @@ def get_heading_article_count(heading: str) -> pd.DataFrame:
             return count
 
         except Exception as e:
-            print(f'Retrying after {retry_interval} seconds due to {e}', file=sys.stderr)
+            print(
+                f"Retrying after {retry_interval} seconds due to {e}", file=sys.stderr
+            )
             time.sleep(retry_interval)
             retry_interval *= 4
 
-    raise RuntimeError(f'Repeated timeouts when downloading {heading}', file=sys.stderr)
-
+    raise RuntimeError(f"Repeated timeouts when downloading {heading}", file=sys.stderr)
 
 
 def get_headings(current_node: Node) -> List[str]:
     children = current_node.children
     article_count = get_heading_article_count(current_node.heading)
-    spacer = '-'*current_node.depth
+    spacer = "-" * current_node.depth
     print(spacer, current_node.heading, article_count)
 
     # If the current heading has less than the threshold amount, we filter out both it
@@ -125,10 +129,12 @@ def get_headings(current_node: Node) -> List[str]:
             return [current_node.heading]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('mesh_file', help='File containing mesh descriptors in ascii format')
-    parser.add_argument('out_file', help='Location to store the headings to use')
+    parser.add_argument(
+        "mesh_file", help="File containing mesh descriptors in ascii format"
+    )
+    parser.add_argument("out_file", help="Location to store the headings to use")
     args = parser.parse_args()
 
     descriptors_by_depth = defaultdict(list)
@@ -138,24 +144,24 @@ if __name__ == '__main__':
         ids = []
         for line in in_file:
             line = line.strip()
-            if 'NEWRECORD' in line:
+            if "NEWRECORD" in line:
                 for id in ids:
                     # H01 is the code for Natural Science Disciplines,
                     # L01 is the code for information science
                     # TODO consider adding Humanities (k01) as well
-                    if 'H01' not in id:
+                    if "H01" not in id:
                         continue
-                    depth = len(id.split('.'))
+                    depth = len(id.split("."))
 
                     descriptors_by_depth[depth].append((heading, id))
 
                 heading = None
                 ids = []
-            elif 'MH = ' in line:
-                heading = line.split('=')[-1].strip()
-            elif 'MN = ' in line:
+            elif "MH = " in line:
+                heading = line.split("=")[-1].strip()
+            elif "MN = " in line:
                 # Headings are unique, but their location in the tree may not be
-                id = line.split('=')[-1].strip()
+                id = line.split("=")[-1].strip()
                 ids.append(id)
 
     ids = []
@@ -176,7 +182,7 @@ if __name__ == '__main__':
             current_node = Node(heading, id)
             current_node.depth = depth
 
-            parent = id.rsplit('.', 1)[0]
+            parent = id.rsplit(".", 1)[0]
             if parent not in id_to_node:
                 if depth == 1:
                     trees.append(current_node)
@@ -195,7 +201,7 @@ if __name__ == '__main__':
         filtered_headings.extend(get_headings(root))
         print(filtered_headings)
 
-    with open(args.out_file, 'wb') as out_file:
+    with open(args.out_file, "wb") as out_file:
         pickle.dump(filtered_headings, out_file)
 
     os.remove(CACHE_FILE)

@@ -21,20 +21,54 @@ import lzma
 import requests
 from ratelimit import limits, sleep_and_retry
 
-HEADINGS = ['Anatomy', 'Histocytochemistry', 'Immunochemistry', 'Molecular Biology',
-            'Proteomics', 'Metabolomics', 'Human Genetics', 'Genetics, Population',
-            'Genetic Research', 'Food Microbiology', 'Soil Microbiology',
-            'Water Microbiology', 'Computational Biology', 'Biophysics',
-            'Biotechnology', 'Neurosciences', 'Pharmacology', 'Physiology',
-            'Toxicology', 'Chemistry, Pharmaceutical', 'Crystallography',
-            'Electrochemistry', 'Photochemistry', 'Statistics as Topic',
-            'Nonlinear Dynamics', 'Acoustics', 'Electronics', 'Magnetics',
-            'Nuclear Physics', 'Rheology', 'Fiber Optic Technology',
-            'Microscopy', 'Operations Research', 'Research Design',
-            'Health Services Research', 'Nursing Evaluation Research',
-            'Nursing Methodology Research', 'Outcome Assessment, Health Care',
-            'Translational Research, Biomedical', 'Empirical Research',
-            'Nanotechnology', 'Microtechnology', 'Ecology', 'Geography', 'Paleontology']
+HEADINGS = [
+    "Anatomy",
+    "Histocytochemistry",
+    "Immunochemistry",
+    "Molecular Biology",
+    "Proteomics",
+    "Metabolomics",
+    "Human Genetics",
+    "Genetics, Population",
+    "Genetic Research",
+    "Food Microbiology",
+    "Soil Microbiology",
+    "Water Microbiology",
+    "Computational Biology",
+    "Biophysics",
+    "Biotechnology",
+    "Neurosciences",
+    "Pharmacology",
+    "Physiology",
+    "Toxicology",
+    "Chemistry, Pharmaceutical",
+    "Crystallography",
+    "Electrochemistry",
+    "Photochemistry",
+    "Statistics as Topic",
+    "Nonlinear Dynamics",
+    "Acoustics",
+    "Electronics",
+    "Magnetics",
+    "Nuclear Physics",
+    "Rheology",
+    "Fiber Optic Technology",
+    "Microscopy",
+    "Operations Research",
+    "Research Design",
+    "Health Services Research",
+    "Nursing Evaluation Research",
+    "Nursing Methodology Research",
+    "Outcome Assessment, Health Care",
+    "Translational Research, Biomedical",
+    "Empirical Research",
+    "Nanotechnology",
+    "Microtechnology",
+    "Ecology",
+    "Geography",
+    "Paleontology",
+]
+
 
 @sleep_and_retry
 @limits(calls=10, period=1)
@@ -47,7 +81,8 @@ def check_limit():
 
 
 def limited_esearch_query(
-    payload: dict, retmax: int = 10000, sleep: float = 1, tqdm=tqdm.tqdm, api_key=None):
+    payload: dict, retmax: int = 10000, sleep: float = 1, tqdm=tqdm.tqdm, api_key=None
+):
     """
     Return identifiers using the ESearch E-utility.
     Set `tqdm=tqdm.notebook` to use the tqdm notebook interface.
@@ -64,7 +99,7 @@ def limited_esearch_query(
     payload["retmax"] = retmax
     payload["retstart"] = 0
     if api_key:
-        payload['api_key'] = api_key
+        payload["api_key"] = api_key
     ids = list()
     count = 1
     progress_bar = None
@@ -133,7 +168,7 @@ def download_pubmed_ids(
         id_string = ",".join(map(str, id_subset))
         payload = {"db": "pubmed", "id": id_string, "rettype": "xml"}
         if api_key:
-            payload['api_key'] = api_key
+            payload["api_key"] = api_key
         try:
             check_limit()
             response = requests.get(url, params=payload)
@@ -173,42 +208,49 @@ def download_pubmed_ids(
 
 def worker(mesh_term, api_key):
     # Make the term safe for putting in a path
-    path_term = mesh_term.replace(' ', '_')
-    path_term = path_term.replace('-', '_')
-    path_term = path_term.replace(',', '')
+    path_term = mesh_term.replace(" ", "_")
+    path_term = path_term.replace("-", "_")
+    path_term = path_term.replace(",", "")
     path_term = path_term.lower()
-    path = pathlib.Path(f'data/pubmed/efetch/{path_term}.xml.xz')
+    path = pathlib.Path(f"data/pubmed/efetch/{path_term}.xml.xz")
     if not path.exists():
         payload = {
-            'db': 'pubmed',
-            'term': f'"journal article"[pt] AND "{mesh_term}"[MeSH Terms] AND English[Language]',
+            "db": "pubmed",
+            "term": f'"journal article"[pt] AND "{mesh_term}"[MeSH Terms] AND English[Language]',
         }
-        pubmed_ids = limited_esearch_query(payload, api_key=api_key, sleep=1, retmax=100000)
+        pubmed_ids = limited_esearch_query(
+            payload, api_key=api_key, sleep=1, retmax=100000
+        )
         pubmed_ids = sorted(map(int, pubmed_ids))
-        print(f'{len(pubmed_ids):,} articles for {mesh_term}')
+        print(f"{len(pubmed_ids):,} articles for {mesh_term}")
 
         path.parent.mkdir(parents=True, exist_ok=True)
-        with lzma.open(path, 'wt') as write_file:
+        with lzma.open(path, "wt") as write_file:
             download_pubmed_ids(
-                pubmed_ids, write_file, endpoint='efetch',
-                retmax=200, retmin=50, sleep=1, error_sleep=1,
-                api_key=api_key
+                pubmed_ids,
+                write_file,
+                endpoint="efetch",
+                retmax=200,
+                retmin=50,
+                sleep=1,
+                error_sleep=1,
+                api_key=api_key,
             )
     else:
-        print(f'{path} exists already; skipping')
+        print(f"{path} exists already; skipping")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--key_file', help='A file containing an NCBI API key', default=None)
+    parser.add_argument(
+        "--key_file", help="A file containing an NCBI API key", default=None
+    )
     args = parser.parse_args()
 
     api_key = None
     if args.key_file is not None:
-        with open(args.key_file, 'r') as in_file:
+        with open(args.key_file, "r") as in_file:
             api_key = in_file.readline().strip()
-
-     # TODO read heaidngs from a file
 
     # I could be a little more memory eficient by creating a partial function or something,
     # but this is way more readable and I'm only using ~1kB of mem to do this

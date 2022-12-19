@@ -1,3 +1,0 @@
-python indices/build_single_heading_networks.py
-python indices/build_single_heading_networks.py --include_first_degree
-
